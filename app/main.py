@@ -4,7 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
+from graph import render_html
 from llm import LLMError, chat
 from log import log_step
 
@@ -69,8 +71,10 @@ with tab_teach:
             st.rerun()
 
     with right:
-        st.subheader("Knowledge graph")
-        st.info("Live concept graph arrives in Milestone 2.")
+        st.subheader("Knowledge graph · Newton's laws")
+        components.html(render_html(st.session_state.get("mastery", {})), height=480)
+        st.caption("⬜ untested · 🟥 weak · 🟨 shaky · 🟩 solid · dashed border = needs confirmation · "
+                   "arrows point from prerequisite to concept · hover a node for its source")
 
 with tab_prof:
     st.info("Professor view arrives in Milestone 5.")
