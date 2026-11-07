@@ -49,6 +49,27 @@ iframe { border-radius: 18px; background: #fff; box-shadow: 0 6px 24px rgba(0,0,
 
 /* sidebar */
 section[data-testid="stSidebar"] { background: #fbfbfd; border-right: 1px solid var(--line); }
+
+/* slim header */
+.topbar { display:flex; align-items:center; justify-content:space-between; padding: 10px 4px 14px; }
+.brand { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.brand span { background: linear-gradient(90deg, #00a651, #7cc94a); -webkit-background-clip: text;
+              background-clip: text; -webkit-text-fill-color: transparent; }
+.tagline { color: var(--muted); font-size: 0.95rem; }
+/* step bar */
+.steps { display:flex; gap:10px; margin: 6px 0 18px; flex-wrap: wrap; }
+.step { display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:99px; background:#e8e8ed;
+        color: var(--muted); font-weight:600; font-size:.92rem; }
+.step b { display:inline-flex; width:22px; height:22px; border-radius:50%; align-items:center; justify-content:center;
+          background:#fff; color: var(--muted); font-size:.8rem; }
+.step.on { background: var(--ink); color:#fff; }
+.step.on b { background: var(--lime); color: var(--ink); }
+.step.done { background:#e3f4e9; color:#007a3d; }
+.step.done b { background:#00a651; color:#fff; }
+/* legend */
+.legend { color: var(--muted); font-size: .9rem; }
+.dot { display:inline-block; width:12px; height:12px; border-radius:3px; margin: 0 4px 0 10px; vertical-align:-1px; }
+.dot.g { background:#1f9d55; } .dot.y { background:#d9a21b; } .dot.r { background:#d64545; } .dot.n { background:#9aa1a9; }
 </style>
 """
 
@@ -71,3 +92,20 @@ def apply() -> None:
 
 def hero() -> None:
     st.markdown(HERO, unsafe_allow_html=True)
+
+
+STEP_NAMES = ["Start", "Teach Matteo", "Summary"]
+
+
+def header() -> None:
+    st.markdown("<div class='topbar'><div class='brand'>➕ Plus<span>One</span></div>"
+                "<div class='tagline'>Learn Physics by teaching it · Physics I · Newton's laws</div></div>",
+                unsafe_allow_html=True)
+
+
+def steps(current: int) -> None:
+    parts = []
+    for i, name in enumerate(STEP_NAMES, 1):
+        cls = "on" if i == current else ("done" if i < current else "")
+        parts.append(f"<div class='step {cls}'><b>{'✓' if i < current else i}</b>{name}</div>")
+    st.markdown("<div class='steps'>" + "".join(parts) + "</div>", unsafe_allow_html=True)
