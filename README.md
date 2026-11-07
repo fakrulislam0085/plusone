@@ -6,6 +6,10 @@ Students learn **Newton's laws** by teaching **Matteo**, an AI freshman who is c
 
 > *"You struggle with **Newton's third law** because it requires **Force as an interaction**, and your explanation of Force as an interaction was weak."* (live output, `docs/example-interactions.md`)
 
+**Student flow:** ① Start (alone or as a group) → ② **today's session quiz** (graded in code; the answers stay locked) → ③ **teach Matteo** the topic you missed → ④ summary (quiz answers unlock, what to review, 🔥 streak +1).
+**Professor:** topics to review (approve/reject) · today's quiz results per topic (no names) · **create a quiz from lecture PDFs** (AI draft → edit → publish) · class streak · class map.
+The quiz and streak features were integrated from teammates' prototypes (`quiz_feature`, `StreakTA`): see `app/quiz.py`, `app/streaks.py`, `prompts/quizmaster.md`.
+
 ---
 
 ## Run it (Windows, ~2 minutes)
@@ -52,7 +56,7 @@ every step ──► logs/session.jsonl (testing evidence)
 |---|---|
 | **Input** | The student's message, the speaker name (group mode), the conversation, the speaker's mastery memory |
 | **Knowledge** | `data/graph.json`: 13 concepts and 20 `requires` edges. Every node has a source (OpenStax University Physics Vol. 1, Ch. 5, plus the demo handout), learning outcomes, linked quiz items and misconception IDs from the pack's catalogue of 12 |
-| **Tools / actions** | `update_mastery`, `trace_root_cause`, `flag_for_lecturer` (`app/tools.py`); the professor's `set_flag_status` (approve/reject) |
+| **Tools / actions** | `update_mastery`, `trace_root_cause`, `flag_for_lecturer` (`app/tools.py`); the professor's `set_flag_status` (approve/reject); `generate_quiz` (AI draft from PDF), `grade_quiz` (deterministic, no LLM), streak updates (`app/quiz.py`, `app/streaks.py`) |
 | **Decisions** | The Examiner decides scores, misconceptions and the next probe. **Code** decides the root cause (the graph, not the LLM), what counts as "confirmed" (two consistent observations), whether a draft is allowed (the guardrail) and what is anonymized |
 | **Output** | Matteo's question; live graph colours; the "Why am I stuck?" card with path and sources; the agent-trace panel; anonymized professor flags with claim, uncertainty and a suggested follow-up from the pack |
 

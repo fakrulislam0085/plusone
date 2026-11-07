@@ -10,6 +10,8 @@ import networkx as nx
 import pandas as pd
 import streamlit as st
 
+import quiz as quizmod
+import streaks
 from graph import COLORS, band, load_graph
 from tools import MISCONCEPTIONS, STUDENTS_DIR, load_flags, set_flag_status
 
@@ -38,6 +40,67 @@ def _follow_up(misconception_ids: list[str]) -> str | None:
     return None
 
 
+def _quiz_section(G, today: dict | None) -> None:
+    st.markdown("### Today's quiz")
+    if today:
+        res = quizmod.results(today["id"])
+        done_n, size, goal = streaks.class_today(today["id"])
+        st.caption(f"**{today['title']}** · {len(today['questions'])} questions · {today.get('origin', '')} · "
+                   f"answered by {done_n} of {size} (live answers: {res['n']}; others synthetic)")
+        if res["per_concept"]:
+            worst = sorted(res["per_concept"].items(), key=lambda kv: kv[1])
+            st.markdown("  \n".join(f"{'🟥' if v < 0.5 else '🟨' if v < 0.8 else '🟩'} "
+                                    f"{G.nodes[c]['name'] if c in G else c}: {round(v * 100)}% correct"
+                                    for c, v in worst))
+        else:
+            st.caption("No live answers yet.")
+
+    with st.expander("Create a quiz from lecture material"):
+        st.caption("Upload slides (PDF or ZIP of PDFs). The AI drafts questions from that material only; "
+                   "you edit and publish. Students never see the answers before they've answered.")
+        up = st.file_uploader("Lecture material", type=["pdf", "zip"])
+        use_pack = st.checkbox("Or use the course handout (demo pack)", value=up is None)
+        c1, c2 = st.columns([3, 1])
+        title = c1.text_input("Quiz title", value="Newton's laws · AI draft")
+        n = c2.number_input("Questions", 3, 10, 5)
+        if st.button("Generate draft", type="primary"):
+            try:
+                if up is not None:
+                    text = quizmod.extract_text(up.name, up.getvalue())
+                elif use_pack:
+                    text = quizmod.extract_text(quizmod.HANDOUT.name, quizmod.HANDOUT.read_bytes())
+                else:
+                    st.warning("Upload a file or tick the handout option.")
+                    text = None
+                if text:
+                    with st.spinner("Drafting questions from the material (about 20 s)…"):
+                        quizmod.generate_draft(text, title, int(n))
+                    st.rerun()
+            except Exception as e:  # show the reason, keep the app alive
+                st.error(f"Couldn't draft a quiz: {e}")
+
+        for d in quizmod.drafts():
+            st.markdown(f"**Draft: {d['title']}** ({len(d['questions'])} questions). Edit cells, then publish.")
+            letters = "ABCD"
+            rows = [{"Question": q["q"], "A": q["options"][0], "B": q["options"][1], "C": q["options"][2],
+                     "D": q["options"][3], "Correct": letters[q["correct"]], "Topic": q["concept"],
+                     "Source": q["source"]} for q in d["questions"]]
+            edited = st.data_editor(
+                pd.DataFrame(rows), key=f"ed_{d['id']}", hide_index=True, num_rows="fixed",
+                column_config={"Correct": st.column_config.SelectboxColumn(options=list(letters), required=True),
+                               "Topic": st.column_config.SelectboxColumn(options=list(G.nodes) + ["other"])})
+            if st.button("Publish to students", key=f"pub_{d['id']}", type="primary"):
+                qs = []
+                for i, (orig, row) in enumerate(zip(d["questions"], edited.to_dict("records"))):
+                    qs.append({**orig, "q": row["Question"], "options": [row["A"], row["B"], row["C"], row["D"]],
+                               "correct": letters.index(row["Correct"]), "concept": row["Topic"],
+                               "source": row["Source"]})
+                quizmod.save_draft(d["id"], qs)
+                quizmod.publish(d["id"])
+                st.success("Published. It is now today's quiz in the Student tab.")
+                st.rerun()
+
+
 def render() -> None:
     G = load_graph()
     students = _class_students()
@@ -46,10 +109,14 @@ def render() -> None:
     weak = Counter(c for s in students for c, m in s["mastery"].items() if band(m["score"]) == "weak")
     hardest = G.nodes[weak.most_common(1)[0][0]]["name"] if weak else "n/a"
 
+    today = quizmod.current()
+    done_n, size, goal = streaks.class_today(today["id"]) if today else (0, 0, 0)
     k1, k2, k3 = st.columns(3)
     k1.metric("Topics to review", len(pending))
     k2.metric("Hardest topic in class", hardest)
-    k3.metric("Students", len(students), help="Includes 30 synthetic demo students.")
+    k3.metric("Class streak", f"🔥 {streaks.class_streak()} sessions",
+              help=f"Grows when at least 80% of the class answers the session quiz. "
+                   f"Today: {done_n} of {size} answered (goal {goal}). Past sessions are synthetic.")
 
     st.markdown("### To review")
     st.caption("Topics students got wrong. Anonymous: no names, no quotes. You decide.")
@@ -74,6 +141,8 @@ def render() -> None:
         with st.expander(f"Reviewed ({len(done)})"):
             for f in done:
                 st.markdown(f"{'✅' if f['status'] == 'approved' else '❌'} {f['concept_name']}")
+
+    _quiz_section(G, today)
 
     with st.expander("Class map: where the class breaks"):
         order = list(reversed(list(nx.topological_sort(G))))
