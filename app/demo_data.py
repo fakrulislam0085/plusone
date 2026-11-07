@@ -73,7 +73,8 @@ def seed() -> None:
     (DATA / "students").mkdir(exist_ok=True)
     for p in (DATA / "students").glob("*.json"):
         p.unlink()
-    for f in ("lecturer_flags.json", "quizzes.json", "streaks.json", "course.json", "class_seed.json"):
+    for f in ("lecturer_flags.json", "quizzes.json", "streaks.json", "course.json", "class_seed.json",
+              "audit.json"):
         if (DATA / f).exists():
             (DATA / f).unlink()
 

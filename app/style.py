@@ -85,6 +85,16 @@ section[data-testid="stSidebar"] { background: #fbfbfd; border-right: 1px solid 
 .unit-title { font-size:1.35rem; font-weight:650; letter-spacing:-0.02em; line-height:1.25; color:var(--ink);
               min-height:2.5em; margin:10px 0 2px; }
 .profile .pname { font-size:1.5rem; font-weight:650; letter-spacing:-0.02em; color:var(--ink); margin-bottom:2px; }
+/* AI teaching audit */
+.audit-hero { border-radius:24px; padding:22px 26px; margin:6px 0 14px; color:#f5f5f7;
+              background: radial-gradient(circle at 92% 0%, #3d9a52 0%, #1b4a2a 32%, #111214 70%); }
+.audit-hero .eyebrow { color:#9be15d; }
+.ah-title { font-size:1.7rem; font-weight:700; letter-spacing:-0.02em; margin:4px 0 6px; color:#fff; }
+.ah-sub { color:#c7c7cc; font-size:.95rem; max-width:820px; }
+.sevchip { display:inline-block; font-size:.75rem; font-weight:700; padding:3px 10px; border-radius:99px; margin-right:6px; }
+.sevchip.high { background:#fdecec; color:#b42318; } .sevchip.medium { background:#fdf5e1; color:#8a5a00; }
+.minchip { display:inline-block; font-size:.75rem; font-weight:600; padding:3px 10px; border-radius:99px;
+           background:#eef0f3; color:#4a4a50; }
 .chip { display:inline-block; font-size:.78rem; font-weight:600; padding:3px 10px; border-radius:99px; }
 .chip.open { background:#e3f4e9; color:#007a3d; } .chip.done { background:#eef0f3; color:#4a4a50; }
 .chip.locked { background:#f3f0ea; color:#8a6d3b; }

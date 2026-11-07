@@ -13,6 +13,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+import audit
 import course
 from icons import dot, ic
 import quiz as quizmod
@@ -199,7 +200,91 @@ def controls() -> None:
         st.success("Posted.")
 
 
+# ---------------------------------------------------------------- 0 AI teaching audit (professor only)
+def _tell_students(concept_name: str) -> None:
+    course.set_announcement(f"Next lecture opens with a short recap of {concept_name}. "
+                            "Before class, try teaching it to Matteo: where do you get stuck?")
+
+
+def audit_page() -> None:
+    if st.session_state.get("user") != "prof":   # access guard in code, not only in the menu
+        st.error("The teaching audit is available to the course professor only.")
+        return
+    G = load_graph()
+    doc = audit.load()
+    current_hash = audit.evidence()["hash"]
+
+    st.markdown(
+        f"<div class='audit-hero'><div class='eyebrow'>{ic('sparkles', 15, '#9be15d')}AI teaching audit · professor only</div>"
+        "<div class='ah-title'>What should I recap in the next lecture?</div>"
+        "<div class='ah-sub'>Matteo reads the anonymous class evidence (levels per topic, quiz results, flags you "
+        "approved) and drafts a recap plan. Suggestions only: you decide.</div></div>", unsafe_allow_html=True)
+
+    a, b, _ = st.columns([2, 2, 5])
+    label = "Generate audit" if not doc else "Regenerate"
+    if a.button(label, type="primary", key="gen_audit", width="stretch"):
+        with st.spinner("Reading the class evidence and drafting a recap plan (about 15 s)…"):
+            audit.generate()
+        st.rerun()
+    if not doc:
+        st.info("No audit yet. Click **Generate audit** to analyse today's class data.")
+        return
+    b.download_button("Download recap plan", audit.markdown(doc), file_name="recap_plan_newtons_laws.md",
+                      mime="text/markdown", key="dl_audit", width="stretch")
+    if doc["evidence_hash"] != current_hash:
+        st.warning("New class activity since this audit. Regenerate to include it.")
+
+    au = doc["audit"]
+    with st.container(border=True):
+        st.markdown(f"#### {au['headline']}")   # AI text: plain markdown, never raw HTML
+    st.caption(f"Generated {doc['generated_at']} · {doc['generated_by']} · anonymous data from {doc['class_size']} "
+               "students (synthetic demo class + live sessions)")
+
+    html_map, h = audit.mindmap_html(doc)
+    st.iframe(html_map, height=h)
+
+    st.markdown(f"### {ic('clipboard-check', 22)}Recap plan for the next lecture", unsafe_allow_html=True)
+    for i, p in enumerate(au["priorities"], 1):
+        c, r = p["concept_id"], p["recap"]
+        name = G.nodes[c]["name"]
+        planned = c in doc["planned"]
+        with st.container(border=True):
+            left, right = st.columns([5, 2], gap="large")
+            with left:
+                sev = "high" if p["severity"] == "high" else "medium"
+                st.markdown(f"<span class='sevchip {sev}'>{'High' if sev == 'high' else 'Medium'} priority</span>"
+                            f"<span class='minchip'>{r['minutes']} min</span>", unsafe_allow_html=True)
+                st.markdown(f"#### {i}. {name}")
+                st.markdown(f"**Evidence:** {p['evidence']}")
+                if p["misconception_id"]:
+                    st.markdown(f"**Misconception to address:** {MISCONCEPTIONS[p['misconception_id']]}")
+                if p["teach_first"]:
+                    st.markdown(f"**May be rooted in:** {G.nodes[p['teach_first']]['name']}. Recap that first.")
+                st.markdown(f"**Open with:** {r['hook']}")
+                st.markdown("\n".join(f"{j}. {s}" for j, s in enumerate(r["steps"], 1)))
+                st.markdown(f"**Check question:** {r['check_question']}")
+                if r["group_task_id"]:
+                    t = audit.TASKS[r["group_task_id"]]
+                    st.markdown(f"**Group task {t['id']} · {t['title']}:** {t['question']}")
+                st.caption(f"Source to revisit: {G.nodes[c]['source']}")
+            with right:
+                st.button("Planned for next lecture" if planned else "Add to next lecture", key=f"plan_{c}",
+                          type="secondary" if planned else "primary", width="stretch",
+                          on_click=audit.toggle_planned, args=(c,))
+                st.button("Tell students", key=f"tell_{c}", width="stretch", on_click=_tell_students, args=(name,),
+                          help="Posts an announcement on every student's home page.")
+                if planned:
+                    st.markdown(f"<span class='muted'>{ic('circle-check', 15, '#1f9d55')}On your next-lecture plan</span>",
+                                unsafe_allow_html=True)
+    if au["going_well"]:
+        st.markdown(f"{ic('circle-check', 18, '#1f9d55')}**Going well:** "
+                    + ", ".join(G.nodes[c]["name"] for c in au["going_well"]), unsafe_allow_html=True)
+    if au["caveat"]:
+        st.caption(au["caveat"])
+
+
 def render() -> None:
-    section = st.segmented_control("Section", ["Class insights", "Quiz", "Course controls"], default="Class insights",
-                                   key="prof_section", label_visibility="collapsed") or "Class insights"
-    {"Class insights": insights, "Quiz": quiz_page, "Course controls": controls}[section]()
+    sections = ["AI teaching audit", "Class insights", "Quiz", "Course controls"]
+    section = st.segmented_control("Section", sections, default="AI teaching audit",
+                                   key="prof_section", label_visibility="collapsed") or "AI teaching audit"
+    {"AI teaching audit": audit_page, "Class insights": insights, "Quiz": quiz_page, "Course controls": controls}[section]()
