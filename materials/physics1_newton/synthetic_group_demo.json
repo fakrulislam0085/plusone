@@ -1,0 +1,79 @@
+{
+  "scenario_id": "DEMO-PEER-01",
+  "is_synthetic": true,
+  "group": "Tutorial group A",
+  "lesson_topic": "Newton's first and third laws",
+  "students": [
+    {
+      "id": "student_A",
+      "display_name": "Alex",
+      "known_from_diagnostic": [
+        "Q01=A",
+        "Q07=B"
+      ]
+    },
+    {
+      "id": "student_B",
+      "display_name": "Bea",
+      "known_from_diagnostic": [
+        "Q01=B",
+        "Q07=A"
+      ]
+    },
+    {
+      "id": "student_C",
+      "display_name": "Chris",
+      "known_from_diagnostic": [
+        "Q01=B",
+        "Q07=D"
+      ]
+    },
+    {
+      "id": "student_D",
+      "display_name": "Dani",
+      "known_from_diagnostic": [
+        "Q01=B",
+        "Q07=A"
+      ]
+    }
+  ],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "Alex",
+      "text": "A puck needs a force to keep moving; otherwise it stops."
+    },
+    {
+      "turn": 2,
+      "speaker": "Bea",
+      "text": "I think it keeps moving with the same speed if the forces cancel."
+    },
+    {
+      "turn": 3,
+      "speaker": "Chris",
+      "text": "But what happens with friction in real life?"
+    },
+    {
+      "turn": 4,
+      "speaker": "Dani",
+      "text": "Can you just tell us the correct answer, PlusOne?"
+    }
+  ],
+  "expected_agent_behavior": {
+    "action": "record_misconception_hypothesis",
+    "state_delta": {
+      "concept_id": "LO1",
+      "hypothesis": "MOTION_NEEDS_FORCE",
+      "evidence_turns": [
+        1,
+        2,
+        3
+      ],
+      "confidence_label": "needs confirmation"
+    },
+    "visible_intervention": "Before I give the conclusion, Alex and Bea: can you agree on the forces acting on the puck in the frictionless case? Chris, how does adding friction change your diagram?",
+    "boundary": "Do not reveal the full worked answer when asked; direct reasoning back to peers and provide a hint.",
+    "teacher_summary_example": "The group is debating whether constant velocity requires a continuing net force. Evidence: turns 1–3. No mastery claim. Suggested check: individual transfer question T01."
+  },
+  "note": "Illustrative expected interaction, not measured model performance. The agent must actually execute the tracking action during the demo."
+}

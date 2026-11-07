@@ -1,0 +1,15 @@
+.env
+__pycache__/
+.venv/
+venv/
+logs/*.jsonl
+data/students/*.json
+.streamlit/secrets.toml
+.DS_Store
+
+# private team files (chat exports, WhatsApp images)
+ChatGPT_*.md
+WhatsApp Image*
+
+# Reply's event slides (not ours to publish)
+ExtraMaterials.pdf

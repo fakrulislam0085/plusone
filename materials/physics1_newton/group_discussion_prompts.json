@@ -1,0 +1,51 @@
+{
+  "pack_id": "plusone-phys1-newton-2026-demo",
+  "prompts": [
+    {
+      "id": "G01",
+      "title": "Motion without a push",
+      "seed": "Student A says, \"If the puck is still moving, something must keep pushing it.\" Student B says, \"No, because acceleration and velocity are different.\"",
+      "question": "Discuss what would happen on an ideal frictionless surface and on a rough floor. Each student must use the phrase \"net force\" correctly.",
+      "targets": [
+        "LO1",
+        "LO6"
+      ],
+      "trigger": [
+        "MOTION_NEEDS_FORCE"
+      ],
+      "facilitator_move": "Ask Student A to propose a test distinguishing constant velocity from acceleration. Invite Student B to challenge with a rough-floor counterexample. Avoid stating the complete answer first."
+    },
+    {
+      "id": "G02",
+      "title": "Truck and car disagreement",
+      "seed": "Student A says, \"The truck exerts more force because it is heavier.\" Student B says, \"The forces are equal but accelerations can differ.\"",
+      "question": "Label the two interacting bodies and identify the forces for each. Explain which mass matters for acceleration.",
+      "targets": [
+        "LO2",
+        "LO3",
+        "LO6"
+      ],
+      "trigger": [
+        "THIRD_LAW_UNEQUAL",
+        "FBD_PAIR"
+      ],
+      "facilitator_move": "Ask each student to name the source and recipient of one force before accepting a conclusion."
+    },
+    {
+      "id": "G03",
+      "title": "The static-friction trap",
+      "seed": "Student A says, \"There is no friction because the box does not move.\" Student B says, \"The friction always equals mu_s times the normal force.\"",
+      "question": "A 12 N horizontal push does not move the box. Use Newton's second law to decide the actual friction force and explain why both statements can be wrong.",
+      "targets": [
+        "LO2",
+        "LO5",
+        "LO6"
+      ],
+      "trigger": [
+        "STATIC_FRICTION_ZERO",
+        "STATIC_FRICTION_MAX"
+      ],
+      "facilitator_move": "Request a horizontal free-body diagram and ask for net force before asking about maximum static friction."
+    }
+  ]
+}

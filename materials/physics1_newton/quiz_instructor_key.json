@@ -1,0 +1,226 @@
+{
+  "pack_id": "plusone-phys1-newton-2026-demo",
+  "grading_note": "MCQ can be scored deterministically; for written answers use tentative criterion-based feedback and instructor review. Avoid reporting percent mastery from ten items.",
+  "items": [
+    {
+      "id": "Q01",
+      "type": "single_select",
+      "lo": [
+        "LO1"
+      ],
+      "sources": [
+        "OS-5.2"
+      ],
+      "difficulty": "conceptual",
+      "correct_option": "B",
+      "explanation": "Zero net force means zero acceleration; the existing velocity remains constant.",
+      "misconception_by_distractor": {
+        "A": "MOTION_NEEDS_FORCE",
+        "C": "FORCE_CAUSES_SPEED",
+        "D": "FORCE_CAUSES_SPEED"
+      }
+    },
+    {
+      "id": "Q02",
+      "type": "single_select",
+      "lo": [
+        "LO2"
+      ],
+      "sources": [
+        "OS-5.3"
+      ],
+      "difficulty": "calculation",
+      "correct_option": "C",
+      "explanation": "Net force is 10 - 4 = 6 N right; a = 6/2 = 3.0 m/s² right.",
+      "misconception_by_distractor": {
+        "A": "NET_VS_APPLIED",
+        "B": "NET_VS_APPLIED",
+        "D": "NET_VS_APPLIED"
+      }
+    },
+    {
+      "id": "Q03",
+      "type": "single_select",
+      "lo": [
+        "LO2"
+      ],
+      "sources": [
+        "OS-5.3"
+      ],
+      "difficulty": "conceptual",
+      "correct_option": "B",
+      "explanation": "For equal net forces, a = F_net/m; halving the mass doubles acceleration.",
+      "misconception_by_distractor": {
+        "A": "MASS_ACCEL",
+        "C": "MASS_ACCEL",
+        "D": "MASS_ACCEL"
+      }
+    },
+    {
+      "id": "Q04",
+      "type": "single_select",
+      "lo": [
+        "LO3",
+        "LO4"
+      ],
+      "sources": [
+        "OS-5.5",
+        "OS-5.7"
+      ],
+      "difficulty": "conceptual",
+      "correct_option": "B",
+      "explanation": "Earth acts on the book, and the book acts on Earth with an equal and opposite gravitational force. The forces act on different bodies.",
+      "misconception_by_distractor": {
+        "A": "FBD_PAIR",
+        "C": "FBD_PAIR",
+        "D": "FBD_PAIR"
+      }
+    },
+    {
+      "id": "Q05",
+      "type": "single_select",
+      "lo": [
+        "LO1",
+        "LO2"
+      ],
+      "sources": [
+        "OS-5.2",
+        "OS-5.3"
+      ],
+      "difficulty": "conceptual",
+      "correct_option": "C",
+      "explanation": "Constant velocity implies zero vertical acceleration, so vertical forces balance: N - mg = 0.",
+      "misconception_by_distractor": {
+        "A": "VELOCITY_FORCE",
+        "B": "VELOCITY_FORCE",
+        "D": "VELOCITY_FORCE"
+      }
+    },
+    {
+      "id": "Q06",
+      "type": "single_select",
+      "lo": [
+        "LO5"
+      ],
+      "sources": [
+        "OS-5.6"
+      ],
+      "difficulty": "conceptual",
+      "correct_option": "B",
+      "explanation": "The box remains at rest, so net horizontal force is zero. Static friction adjusts to 12 N left as long as its maximum is not exceeded.",
+      "misconception_by_distractor": {
+        "A": "STATIC_FRICTION_ZERO",
+        "C": "STATIC_FRICTION_MAX",
+        "D": "FRICTION_WITH_MOTION"
+      }
+    },
+    {
+      "id": "Q07",
+      "type": "single_select",
+      "lo": [
+        "LO3"
+      ],
+      "sources": [
+        "OS-5.5"
+      ],
+      "difficulty": "conceptual",
+      "correct_option": "A",
+      "explanation": "The interaction forces are a third-law pair: equal and opposite, acting on different bodies. Accelerations can differ due to mass.",
+      "misconception_by_distractor": {
+        "B": "THIRD_LAW_UNEQUAL",
+        "C": "THIRD_LAW_UNEQUAL",
+        "D": "FBD_PAIR"
+      }
+    },
+    {
+      "id": "Q08",
+      "type": "single_select",
+      "lo": [
+        "LO2",
+        "LO4"
+      ],
+      "sources": [
+        "OS-5.3",
+        "OS-5.6"
+      ],
+      "difficulty": "calculation",
+      "correct_option": "C",
+      "explanation": "The component of gravity along the incline is mg sin 30°. Thus a = g sin 30° = 4.905 m/s² ≈ 4.91 m/s².",
+      "misconception_by_distractor": {
+        "A": "INCLINE_COMPONENT",
+        "B": "INCLINE_COMPONENT",
+        "D": "INCLINE_COMPONENT"
+      }
+    },
+    {
+      "id": "Q09",
+      "type": "short_answer",
+      "lo": [
+        "LO1",
+        "LO6"
+      ],
+      "sources": [
+        "OS-5.2"
+      ],
+      "difficulty": "reasoning",
+      "expected_points": [
+        "On a frictionless track, constant velocity requires zero net force, not a forward sustaining force.",
+        "On a rough floor, friction is an opposing external force that produces deceleration.",
+        "Distinguishes velocity from acceleration, and ideal model from everyday friction."
+      ],
+      "candidate_misconception_flags": [
+        "MOTION_NEEDS_FORCE",
+        "FORCE_CAUSES_SPEED"
+      ],
+      "human_review_required": true
+    },
+    {
+      "id": "Q10",
+      "type": "short_answer",
+      "lo": [
+        "LO2",
+        "LO3",
+        "LO4",
+        "LO6"
+      ],
+      "sources": [
+        "OS-5.3",
+        "OS-5.5",
+        "OS-5.7"
+      ],
+      "difficulty": "reasoning",
+      "expected_points": [
+        "Total mass is 5.0 kg, so acceleration is 10/5 = 2.0 m/s² right.",
+        "Block B has only the contact horizontal force: F(A on B) = 3.0 × 2.0 = 6.0 N right.",
+        "F(B on A) = 6.0 N left; this and F(A on B) are the third-law pair.",
+        "Applied 10 N on A is not the reaction to F(A on B)."
+      ],
+      "candidate_misconception_flags": [
+        "NET_VS_APPLIED",
+        "FBD_PAIR",
+        "SYSTEM_BOUNDARY"
+      ],
+      "human_review_required": true
+    }
+  ],
+  "transfer_tasks": [
+    {
+      "id": "T01",
+      "concept": "LO1",
+      "prompt": "A spacecraft coasts left at constant velocity in deep space with approximately zero net external force. What happens to its velocity? Explain in one sentence.",
+      "answer": "It continues left at constant velocity; zero net force means zero acceleration."
+    },
+    {
+      "id": "T02",
+      "concept": "LO2",
+      "prompt": "A 5.0 kg cart feels 18 N right and 8 N left. Find acceleration.",
+      "answer": "(18-8)/5 = 2.0 m/s² right."
+    },
+    {
+      "id": "T03",
+      "concept": "LO3",
+      "prompt": "Two skaters push each other. One is twice as massive as the other. Compare forces and accelerations during the push.",
+      "answer": "Interaction forces are equal in magnitude and opposite in direction; the lighter skater has twice the acceleration magnitude if their masses differ by a factor of two."
+    }
+  ]
+}

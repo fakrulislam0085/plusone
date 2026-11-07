@@ -1,0 +1,94 @@
+{
+  "pack_id": "plusone-phys1-newton-2026-demo",
+  "title": "Physics I - Newton's Laws of Motion",
+  "language": "en",
+  "level": "first-year-university",
+  "is_official_polito_material": false,
+  "is_demo_material": true,
+  "scope": [
+    "first law/inertia",
+    "net force and acceleration",
+    "third law interaction pairs",
+    "free-body diagrams",
+    "static friction",
+    "elementary frictionless incline"
+  ],
+  "assumptions": {
+    "g_m_per_s2": 9.81,
+    "reference_frame": "approximately inertial classroom/laboratory frame",
+    "units": "SI"
+  },
+  "learning_outcomes": [
+    {
+      "id": "LO1",
+      "statement": "Distinguish velocity from acceleration and apply Newton's first law."
+    },
+    {
+      "id": "LO2",
+      "statement": "Compute acceleration from the vector sum of external forces and mass."
+    },
+    {
+      "id": "LO3",
+      "statement": "Identify Newton's third-law force pairs on different interacting bodies."
+    },
+    {
+      "id": "LO4",
+      "statement": "Construct a free-body diagram with only forces acting on the chosen body."
+    },
+    {
+      "id": "LO5",
+      "statement": "Reason about static and kinetic friction without assuming friction has a fixed value."
+    },
+    {
+      "id": "LO6",
+      "statement": "Explain reasoning to peers and apply a principle to a new situation."
+    }
+  ],
+  "misconceptions": {
+    "MOTION_NEEDS_FORCE": "Believes a continuing net force is required to sustain constant velocity.",
+    "FORCE_CAUSES_SPEED": "Confuses force with speed rather than acceleration.",
+    "NET_VS_APPLIED": "Uses an applied force instead of net external force.",
+    "MASS_ACCEL": "Assumes a more massive body accelerates more under equal net force.",
+    "FBD_PAIR": "Places action-reaction forces on the same free-body diagram.",
+    "THIRD_LAW_UNEQUAL": "Believes the more massive/stronger body exerts a larger interaction force.",
+    "VELOCITY_FORCE": "Infers a nonzero net force from nonzero constant velocity.",
+    "STATIC_FRICTION_ZERO": "Assumes friction acts only once motion begins.",
+    "STATIC_FRICTION_MAX": "Assumes static friction always equals its maximum available value.",
+    "FRICTION_WITH_MOTION": "Misidentifies friction direction as necessarily the direction of velocity.",
+    "INCLINE_COMPONENT": "Interchanges sine and cosine for weight components on incline.",
+    "SYSTEM_BOUNDARY": "Cannot distinguish interaction forces when isolating a body versus a system."
+  },
+  "references": [
+    {
+      "id": "OS-5.1",
+      "title": "OpenStax University Physics Vol. 1, Section 5.1 - Forces",
+      "url": "https://openstax.org/books/university-physics-volume-1/pages/5-1-forces"
+    },
+    {
+      "id": "OS-5.2",
+      "title": "OpenStax University Physics Vol. 1, Section 5.2 - Newton's First Law",
+      "url": "https://openstax.org/books/university-physics-volume-1/pages/5-2-newtons-first-law"
+    },
+    {
+      "id": "OS-5.3",
+      "title": "OpenStax University Physics Vol. 1, Section 5.3 - Newton's Second Law",
+      "url": "https://openstax.org/books/university-physics-volume-1/pages/5-3-newtons-second-law"
+    },
+    {
+      "id": "OS-5.5",
+      "title": "OpenStax University Physics Vol. 1, Section 5.5 - Newton's Third Law",
+      "url": "https://openstax.org/books/university-physics-volume-1/pages/5-5-newtons-third-law"
+    },
+    {
+      "id": "OS-5.6",
+      "title": "OpenStax University Physics Vol. 1, Section 5.6 - Common Forces",
+      "url": "https://openstax.org/books/university-physics-volume-1/pages/5-6-common-forces"
+    },
+    {
+      "id": "OS-5.7",
+      "title": "OpenStax University Physics Vol. 1, Section 5.7 - Drawing Free-Body Diagrams",
+      "url": "https://openstax.org/books/university-physics-volume-1/pages/5-7-drawing-free-body-diagrams"
+    }
+  ],
+  "source_note": "Original demonstration handout written for PlusOne, aligned with real OpenStax University Physics Volume 1 Chapter 5. Not official Politecnico di Torino course notes. Replace/add authorized course slides if the challenge requires that institution's actual materials."
+}
