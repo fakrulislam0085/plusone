@@ -64,7 +64,8 @@ def main() -> None:
             history.append({"role": "assistant", "speaker": "Matteo", "text": r["reply"]})
             exam = r["exam"] or {}
             scores = ", ".join(f"`{c['id']}`={c['score']}" for c in exam.get("concepts_touched", [])) or "none"
-            miscs = ", ".join(m["misconception_id"] or ("not in graph: " + m["description"])
+            miscs = ", ".join(m["misconception_id"] or (("not in graph: " if m["not_in_graph"] else
+                              f"uncatalogued wrong idea on `{m['concept_id']}`: ") + m["description"])
                               for m in exam.get("misconceptions", [])) or "none"
             print(f"[{dt:.1f}s] {speaker}: {text[:60]}...\n  Matteo: {r['reply']}\n  scores: {scores} | misc: {miscs}")
             out += [f"**{speaker}:** {text}", "", f"**Matteo:** {r['reply']}", "",
