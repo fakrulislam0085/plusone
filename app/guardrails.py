@@ -51,8 +51,17 @@ def check(draft: str) -> tuple[bool, str]:
     return True, ""
 
 
+_EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F000-\U0001F2FF⭐‍️]")
+
+
+def strip_emoji(text: str) -> str:
+    """The UI uses Lucide icons only; remove any emoji the model still writes."""
+    text = re.sub(r"[ \t]{2,}", " ", _EMOJI.sub("", text))
+    return re.sub(r"[ \t]+([,.!?;:])", r"\1", text).strip()
+
+
 def canned_question(concept_name: str | None, peer: str | None = None) -> str:
     if peer:
-        return f"Hmm, I'm lost again 😅 {peer}, how would you explain this part to me?"
+        return f"Hmm, I'm lost again. {peer}, how would you explain this part to me?"
     topic = concept_name or "this"
-    return f"Wait, I'm still confused about {topic} 😅 Can you explain it with a simple example?"
+    return f"Wait, I'm still confused about {topic}. Can you explain it with a simple example?"

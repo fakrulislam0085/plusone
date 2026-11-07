@@ -186,14 +186,14 @@ def run_matteo(history, exam, mode, participants) -> tuple[str, dict]:
         ok, reason = guardrails.check(draft)
         log_step("matteo_draft", input=history[-1]["text"], output=draft, guardrail_ok=ok, reason=reason)
         if ok:
-            return draft, info
+            return guardrails.strip_emoji(draft), info
         info.update(regenerated=True, rejected_reason=reason)
         draft = chat(system + guardrails.STRICT_REMINDER.format(reason=reason), msgs, effort="medium",
                      max_tokens=2000)
         ok, reason2 = guardrails.check(draft)
         log_step("matteo_regenerated", output=draft, guardrail_ok=ok, reason=reason2)
         if ok:
-            return draft, info
+            return guardrails.strip_emoji(draft), info
     except LLMError as e:
         log_step("matteo_error", output=str(e))
     info["fallback"] = True

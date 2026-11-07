@@ -82,6 +82,9 @@ section[data-testid="stSidebar"] { background: #fbfbfd; border-right: 1px solid 
 .course-off { border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-top:8px; opacity:.55; background:#fafafa; }
 .crumbs { color: var(--muted); font-size:.9rem; margin: 0 0 6px; }
 .crumbs b { color: var(--ink); }
+.unit-title { font-size:1.35rem; font-weight:650; letter-spacing:-0.02em; line-height:1.25; color:var(--ink);
+              min-height:2.5em; margin:10px 0 2px; }
+.profile .pname { font-size:1.5rem; font-weight:650; letter-spacing:-0.02em; color:var(--ink); margin-bottom:2px; }
 .chip { display:inline-block; font-size:.78rem; font-weight:600; padding:3px 10px; border-radius:99px; }
 .chip.open { background:#e3f4e9; color:#007a3d; } .chip.done { background:#eef0f3; color:#4a4a50; }
 .chip.locked { background:#f3f0ea; color:#8a6d3b; }
@@ -109,11 +112,22 @@ def hero() -> None:
     st.markdown(HERO, unsafe_allow_html=True)
 
 
+def _logo() -> str:
+    from icons import ic
+    return ic("smile", 26, "#00a651", 2.2)
+
+
+def _check() -> str:
+    from icons import PATHS
+    return ("<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' "
+            f"stroke-linecap='round' stroke-linejoin='round'>{PATHS['check']}</svg>")
+
+
 STEP_NAMES = ["Start", "Quiz", "Teach Matteo", "Final check", "Summary"]
 
 
 def header() -> None:
-    st.markdown("<div class='topbar'><div class='brand'>🤔 <span>Matteo</span></div>"
+    st.markdown("<div class='topbar'><div class='brand'>" + _logo() + "<span>Matteo</span></div>"
                 "<div class='tagline'>Campus portal · demo</div></div>",
                 unsafe_allow_html=True)
 
@@ -122,13 +136,13 @@ def steps(current: int) -> None:
     parts = []
     for i, name in enumerate(STEP_NAMES, 1):
         cls = "on" if i == current else ("done" if i < current else "")
-        parts.append(f"<div class='step {cls}'><b>{'✓' if i < current else i}</b>{name}</div>")
+        parts.append(f"<div class='step {cls}'><b>{_check() if i < current else i}</b>{name}</div>")
     st.markdown("<div class='steps'>" + "".join(parts) + "</div>", unsafe_allow_html=True)
 
 
 def profile(name: str, subtitle: str, facts: list[tuple[str, str]]) -> None:
     items = "".join(f"<div>{k}<b>{v}</b></div>" for k, v in facts)
-    st.markdown(f"<div class='profile'><div class='bar'></div><h3>{name}</h3><div class='muted'>{subtitle}</div>"
+    st.markdown(f"<div class='profile'><div class='bar'></div><div class='pname'>{name}</div><div class='muted'>{subtitle}</div>"
                 f"<div class='facts'>{items}</div></div>", unsafe_allow_html=True)
 
 

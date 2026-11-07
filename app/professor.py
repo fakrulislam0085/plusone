@@ -14,6 +14,7 @@ import pandas as pd
 import streamlit as st
 
 import course
+from icons import dot, ic
 import quiz as quizmod
 import streaks
 from graph import band, load_graph
@@ -61,7 +62,7 @@ def insights() -> None:
     k1, k2, k3 = st.columns(3)
     k1.metric("Today's quiz answered", f"{done_n} of {size}", help=f"Class goal: {goal}.")
     k2.metric("Topics to review", len(pending))
-    k3.metric("Class streak", f"🔥 {streaks.class_streak()} sessions", help="Grows when 80% answer the session quiz.")
+    k3.metric("Class streak", f"{streaks.class_streak()} sessions", help="Grows when 80% answer the session quiz.")
 
     st.markdown("### Where the class breaks")
     st.markdown("<p class='legend'><span class='dot r'></span>to fix <span class='dot y'></span>almost "
@@ -88,7 +89,7 @@ def insights() -> None:
                 if f:
                     tip = _follow_up(f["misconception_ids"])
                     if tip:
-                        st.caption(f"💡 Suggested: {tip}")
+                        st.markdown(f"<span class='muted'>{ic('lightbulb', 15)}Suggested: {tip}</span>", unsafe_allow_html=True)
             with d:
                 if f and f["status"] == "pending":
                     x, y = st.columns(2)
@@ -96,7 +97,8 @@ def insights() -> None:
                     y.button("Reject", key=f"no_{c}", on_click=set_flag_status, args=(c, "rejected"),
                              help="The AI got this wrong")
                 elif f:
-                    st.markdown("✅ Approved" if f["status"] == "approved" else "❌ Rejected")
+                    st.markdown(ic("circle-check", 16, "#1f9d55") + "Approved" if f["status"] == "approved"
+                                else ic("circle-x", 16, "#d64545") + "Rejected", unsafe_allow_html=True)
 
     if not trouble:
         st.info("No weak topics yet.")
@@ -118,7 +120,7 @@ def quiz_page() -> None:
         st.caption(f"{len(today['questions'])} questions · {today.get('origin', '')} · answered by {done_n} of "
                    f"{size} · graded by code, never by AI")
         for c, v in sorted(res["per_concept"].items(), key=lambda kv: kv[1]):
-            st.markdown(f"{'🟥' if v < 0.5 else '🟨' if v < 0.8 else '🟩'} **{G.nodes[c]['name'] if c in G else c}**: "
+            st.markdown(f"{dot('weak' if v < 0.5 else 'shaky' if v < 0.8 else 'solid')}**{G.nodes[c]['name'] if c in G else c}**: "
                         f"{round(v * 100)}% correct")
         with st.expander("See the questions"):
             for i, q in enumerate(today["questions"], 1):
@@ -170,7 +172,7 @@ def quiz_page() -> None:
 # ---------------------------------------------------------------- 3 course controls
 def controls() -> None:
     st.markdown("### Units students can open")
-    labels = {"done": "✅ Completed", "open": "🟢 Open now", "locked": "🔒 Locked"}
+    labels = {"done": "Completed", "open": "Open now", "locked": "Locked"}
     for u in course.units():
         a, b = st.columns([3, 2], vertical_alignment="center")
         a.markdown(f"**{u['title']}** · {u['week']}" + ("" if u["has_content"] else "  \n<span class='muted'>no "

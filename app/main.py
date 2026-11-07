@@ -12,6 +12,7 @@ import json
 import streamlit as st
 
 import course
+from icons import avatar, dot, ic
 import demo_data
 import professor
 import quiz as quizmod
@@ -22,10 +23,14 @@ from orchestrator import run_turn
 from tools import load_student, mastery_view, trace_root_cause, update_mastery
 
 STAGES = {"start": 1, "quiz": 2, "teach": 3, "check": 4, "summary": 5}
-AVATARS = {"Alex": "🧑‍🦱", "Bea": "👩‍🦰", "Chris": "🧑‍🦲", "Dani": "👩‍🦳", "Elena": "👩", "Federico": "🧔",
-           "Giulia": "👩‍🦱", "Hamid": "🧑", "Irene": "👱‍♀️", "Luca": "👨"}
+AV_MATTEO, AV_STUDENT = avatar("matteo"), avatar("student")   # Lucide icons in circles
 
-st.set_page_config(page_title="Matteo · Campus portal (demo)", page_icon="🤔", layout="wide",
+
+def html(text: str) -> None:
+    """Markdown with inline Lucide icons. Only for OUR text, never for LLM output."""
+    st.markdown(text, unsafe_allow_html=True)
+
+st.set_page_config(page_title="Matteo · Campus portal (demo)", page_icon=avatar("logo"), layout="wide",
                    initial_sidebar_state="collapsed")
 style.apply()
 demo_data.ensure()
@@ -46,6 +51,8 @@ def k(name: str) -> str:
 
 
 def me() -> dict:
+    if ss.user != "prof" and ss.user not in ROSTER:   # stale/unknown login value: fall back safely
+        ss.user = "giulia"
     return PROF if ss.user == "prof" else ROSTER[ss.user]
 
 
@@ -76,7 +83,7 @@ def fresh_flow() -> None:
 
 
 def switch_user() -> None:
-    ss.user = ss.login
+    ss.user = ss.login if (ss.login == "prof" or ss.login in ROSTER) else "giulia"
     ss.page = "home"
     fresh_flow()
 
@@ -108,13 +115,13 @@ def start_session() -> None:
 
 def greeting(mode: str, focus: str | None) -> str:
     if focus:
-        return (f"Ciao{' everyone' if mode == 'group' else ''}! I'm Matteo 👋 I got **{concept_name(focus)}** "
-                "wrong on today's quiz too 😅 Can you explain it to me?")
+        return (f"Ciao{' everyone' if mode == 'group' else ''}! I'm Matteo. I got **{concept_name(focus)}** "
+                "wrong on today's quiz too. Can you explain it to me?")
     if mode == "group":
-        return ("Ciao everyone! I'm Matteo 👋 Thanks for letting me join your study group. "
-                "The prof did Newton's laws today and I'm lost 😅 Who wants to start?")
+        return ("Ciao everyone! I'm Matteo, thanks for letting me join your study group. "
+                "The prof did Newton's laws today and I'm lost. Who wants to start?")
     return ("Ciao! I'm Matteo, first year. Today the prof did Newton's laws and honestly "
-            "I'm lost 😅 Can you explain it to me? Where should we start?")
+            "I'm lost. Can you explain it to me? Where should we start?")
 
 
 def open_chat(focus: str | None) -> None:
@@ -156,16 +163,16 @@ def nav(back=None, primary=None, secondary=None, where="top") -> None:
 
 # ================================================================= layout: left menu + content
 style.header()
-menu, main = st.columns([1, 5], gap="large")
+menu, main = st.columns([1.3, 5], gap="large")
 with menu:
     st.selectbox("Logged in as (demo)", ["prof"] + list(ROSTER), key="login", on_change=switch_user,
-                 format_func=lambda u: "👩‍🏫 Prof. Bianchi" if u == "prof" else f"🎓 {ROSTER[u]['name']}")
-    st.button("🏠  Home", on_click=goto, args=("home",), width="stretch",
+                 format_func=lambda u: "Prof. Bianchi (prof)" if u == "prof" else ROSTER[u]["name"])
+    st.button("Home", on_click=goto, args=("home",), width="stretch",
               type="primary" if ss.page == "home" else "secondary")
-    st.button("📘  Physics I", on_click=goto, args=("course",), width="stretch",
+    st.button("Physics I", on_click=goto, args=("course",), width="stretch",
               type="primary" if ss.page in ("course", "unit") else "secondary")
     st.divider()
-    st.button("🧹 Reset demo", on_click=reset_demo, width="stretch",
+    st.button("Reset demo", on_click=reset_demo, width="stretch",
               help="Restore the 10 synthetic students, today's quiz and flags to their starting state.")
     st.caption("Demo portal. All students, numbers and past sessions are synthetic. Material: OpenStax-aligned "
                "demo pack (CC BY 4.0), not official university notes.")
@@ -185,7 +192,7 @@ with main:
                 style.profile(user["name"], f"Student number {user['matricola']}",
                               [("Programme", user["program"]), ("Cohort", user["cohort"]), ("Study group", user["team"])])
             with st.container(border=True):
-                st.markdown("#### 📚 Courses · 2026/27")
+                html(f"#### {ic('library', 22)}Courses · 2026/27")
                 a, b = st.columns([4, 1], vertical_alignment="center")
                 a.markdown(f"**{course.COURSE['name']}**  \n<span class='muted'>{course.COURSE['code']} · "
                            f"{course.COURSE['cfu']} CFU · {'you teach this course' if is_prof else course.COURSE['teacher']}"
@@ -199,21 +206,21 @@ with main:
             today = quizmod.current()
             if not is_prof and course.announcement():
                 with st.container(border=True):
-                    st.markdown("#### 📣 From your professor")
+                    html(f"#### {ic('megaphone', 22)}From your professor")
                     st.markdown(course.announcement())
             with st.container(border=True):
-                st.markdown("#### 📅 Today")
+                html(f"#### {ic('calendar', 22)}Today")
                 st.markdown("**10:00 · Physics I lecture**  \nNewton's laws")
                 if today:
                     n, size, _goal = streaks.class_today(today["id"])
                     st.markdown(f"**Until 18:00 · Session quiz open**  \n{n} of {size} students answered")
             if not is_prof:
                 with st.container(border=True):
-                    st.markdown("#### 🤔 Matteo")
+                    html(f"#### {ic('smile', 22, '#00a651')}Matteo")
                     team = team_of(user["id"])
-                    st.markdown(f"🔥 **{streaks.streak(user['id'])}-session streak**  \n"
-                                f"{user['team']}: {', '.join(r['first'] for r in team)} · "
-                                f"team streak 🔥 {streaks.team_streak([r['id'] for r in team])}")
+                    html(f"{ic('flame', 16, '#e8590c')}**{streaks.streak(user['id'])}-session streak**  \n"
+                         f"{user['team']}: {', '.join(r['first'] for r in team)} · "
+                         f"team streak {ic('flame', 16, '#e8590c')}{streaks.team_streak([r['id'] for r in team])}")
 
     # ------------------------------------------------------------- COURSE
     elif ss.page == "course":
@@ -230,9 +237,10 @@ with main:
                 for col, u in zip(cols, row):
                     with col:
                         with st.container(border=True):
-                            chip = {"done": "✅ Completed", "open": "🟢 Open now", "locked": "🔒 Locked"}[u["status"]]
+                            chip = {"done": ic("circle-check", 14) + "Completed", "open": ic("circle-dot", 14) + "Open now",
+                                    "locked": ic("lock", 14) + "Locked"}[u["status"]]
                             st.markdown(f"<span class='chip {u['status']}'>{chip}</span>", unsafe_allow_html=True)
-                            st.markdown(f"#### {u['title']}")
+                            st.markdown(f"<div class='unit-title'>{u['title']}</div>", unsafe_allow_html=True)
                             st.caption(u["week"])
                             can_open = u["status"] == "open" and u["has_content"]
                             label = ("Open →" if can_open else "No material yet" if u["status"] == "open"
@@ -259,12 +267,12 @@ with main:
                     st.radio("Mode", ["On my own", "With my study group"], key=k("mode"), horizontal=True,
                              label_visibility="collapsed")
                     if ss.get(k("mode")) == "With my study group":
-                        st.markdown(f"👥 **{user['team']}**: {', '.join(r['first'] for r in team)} · "
-                                    f"team streak 🔥 {streaks.team_streak([r['id'] for r in team])}  \n"
+                        st.markdown(f"{ic('users', 18)}**{user['team']}**: {', '.join(r['first'] for r in team)} · "
+                                    f"team streak {ic('flame', 16, '#e8590c')}{streaks.team_streak([r['id'] for r in team])}  \n"
                                     "<span class='muted'>Sit together; pick who's speaking as you go.</span>",
                                     unsafe_allow_html=True)
                     else:
-                        st.markdown(f"🔥 **{streaks.streak(user['id'])}-session streak**. Today's quiz keeps it going.")
+                        html(f"{ic('flame', 16, '#e8590c')}**{streaks.streak(user['id'])}-session streak**. Today's quiz keeps it going.")
                     st.caption("You take today's quiz, then teach Matteo what you missed. He never gives answers; "
                                "your professor only sees anonymous topics.")
                     st.button("Start  →", on_click=start_session, type="primary", width="stretch", key=k("start"))
@@ -283,7 +291,7 @@ with main:
                            "Matteo · graded by code, not by AI")
                 for person, r in ss.quiz_results.items():
                     with st.container(border=True):
-                        st.markdown(f"**{person}: {r['score']} / {r['max']}** · 🔥 streak {streaks.streak(person)}")
+                        html(f"**{person}: {r['score']} / {r['max']}** · {ic('flame', 16, '#e8590c')}streak {streaks.streak(person)}")
                         st.markdown("To work on: " + ", ".join(f"**{concept_name(c)}**" for c in r["weak_concepts"])
                                     if r["weak_concepts"] else "All correct. Now prove it: can you teach it?")
                 todo = [p for p in ss.participants if p not in ss.quiz_results]
@@ -314,7 +322,7 @@ with main:
             nav(back=("←  Back to quiz", go, ("quiz",)) if today else ("←  Back", go, ("start",)),
                 primary=("Final check  →", go, ("check",), not taught))
             if not taught:
-                st.caption("👉 Explain something to Matteo first. The final check unlocks after you've taught him.")
+                st.caption("Explain something to Matteo first. The final check unlocks after you've taught him.")
             left, right = st.columns([3, 2], gap="large")
             with left:
                 speaker = (st.radio("Who's speaking?", participants, horizontal=True, key=k("speaker"))
@@ -323,18 +331,18 @@ with main:
                 with chat_box:
                     for m in ss.messages:
                         if m["role"] == "assistant":
-                            with st.chat_message("assistant", avatar="🤔"):
+                            with st.chat_message("assistant", avatar=AV_MATTEO):
                                 st.markdown(m["text"])
                         else:
-                            with st.chat_message("user", avatar=AVATARS.get(m["speaker"], "🧑‍🎓")):
+                            with st.chat_message("user", avatar=AV_STUDENT):
                                 st.markdown(f"**{m['speaker']}:** {m['text']}" if mode == "group" else m["text"])
                 prompt = st.chat_input(f"{speaker}, explain something to Matteo…", key=k("chat"))
                 if prompt:
                     ss.messages.append({"role": "user", "speaker": speaker, "text": prompt})
                     with chat_box:
-                        with st.chat_message("user", avatar=AVATARS.get(speaker, "🧑‍🎓")):
+                        with st.chat_message("user", avatar=AV_STUDENT):
                             st.markdown(f"**{speaker}:** {prompt}" if mode == "group" else prompt)
-                        with st.chat_message("assistant", avatar="🤔"):
+                        with st.chat_message("assistant", avatar=AV_MATTEO):
                             with st.spinner("Matteo is thinking…"):
                                 result = run_turn(ss.messages, speaker, mode, participants)
                     ss.messages.append({"role": "assistant", "speaker": "Matteo", "text": result["reply"]})
@@ -351,7 +359,7 @@ with main:
                             "almost <span class='dot r'></span>to fix <span class='dot n'></span>not yet · "
                             "<b>pale</b> = seen once, not confirmed yet</p>", unsafe_allow_html=True)
                 with st.container(border=True):
-                    st.markdown("#### 🧭 Possible gap to check")
+                    html(f"#### {ic('compass', 22)}Possible gap to check")
                     if root:
                         st.markdown(root["explanation"])
                         st.caption("Source: " + " · ".join(p["source"] for p in root["path"]))
@@ -381,7 +389,9 @@ with main:
                 for person, r in ss.check_results.items():
                     with st.container(border=True):
                         s = "pending review" if r["score"] is None else f"{r['score']} / 3"
-                        st.markdown(f"**{person}: {s}** · {'✅ applied it' if r['ok'] else '🔁 not yet'}  \n{r['feedback']}")
+                        html(f"**{person}: {s}** · " + (ic("circle-check", 16, "#1f9d55") + "applied it" if r["ok"]
+                             else ic("rotate-ccw", 16, "#d9a21b") + "not yet"))
+                        st.markdown(r["feedback"])   # AI feedback: plain markdown, never HTML
                         with st.expander("What a full answer covers"):
                             st.markdown("\n".join(f"- {p}" for p in r["model_points"]))
                 if todo:
@@ -409,11 +419,11 @@ with main:
                                 st.rerun()
 
         else:  # summary
-            nav(back=("←  Keep teaching", go, ("teach",)), primary=("Back to Physics I  ✓", goto, ("course",)))
+            nav(back=("←  Keep teaching", go, ("teach",)), primary=("Back to Physics I", goto, ("course",)))
             G = load_graph()
             st.markdown("### Session summary")
             if ss.mode == "group":
-                st.markdown(f"🔥 **Team streak: {streaks.team_streak(ss.participants)} sessions**")
+                html(f"{ic('flame', 16, '#e8590c')}**Team streak: {streaks.team_streak(ss.participants)} sessions**")
             cols = st.columns(min(len(ss.participants), 4), gap="large")
             for i, person in enumerate(ss.participants):
                 mastery = load_student(person)["mastery"]
@@ -422,30 +432,30 @@ with main:
                 qr = ss.quiz_results.get(person)
                 with cols[i % len(cols)]:
                     with st.container(border=True):
-                        st.markdown(f"#### {person} · 🔥 {streaks.streak(person)}")
+                        html(f"#### {person} · {ic('flame', 16, '#e8590c')}{streaks.streak(person)}")
                         if qr:
                             st.markdown(f"**Quiz:** {qr['score']} / {qr['max']}")
                         cr = ss.get("check_results", {}).get(person)
-                        st.markdown(f"**Final check:** {'skipped' if not cr else 'pending review' if cr['score'] is None else str(cr['score']) + ' / 3'}"
-                                    + (" · ✅ applied it alone" if cr and cr["ok"] else ""))
+                        html(f"**Final check:** {'skipped' if not cr else 'pending review' if cr['score'] is None else str(cr['score']) + ' / 3'}"
+                                    + (" · " + ic("circle-check", 16, "#1f9d55") + "applied it alone" if cr and cr["ok"] else ""))
                         if good:
-                            st.markdown("**✅ Explained well**  \n" + "  \n".join(
-                                f"{'🟩' if band(mastery[c]['score']) == 'solid' else '🟨'} {concept_name(c)}"
+                            html(f"**{ic('circle-check', 16, '#1f9d55')}Explained well**  \n" + "  \n".join(
+                                f"{dot(band(mastery[c]['score']))}{concept_name(c)}"
                                 + (" _(seen once, not confirmed yet)_" if mastery[c]["status"] == "needs_confirmation" else "")
                                 for c in good))
                         if fix:
-                            st.markdown("**🔁 To review**")
+                            html(f"**{ic('rotate-ccw', 16, '#d64545')}To review**")
                             for c in fix:
                                 rc = trace_root_cause(person, c)
-                                st.markdown(f"🟥 **{concept_name(c)}**  \n{rc['explanation']}")
+                                html(f"{dot('weak')}**{concept_name(c)}**  \n{rc['explanation']}")
                                 st.caption(f"Read: {G.nodes[rc.get('root_id', c)]['source']}")
-                            st.caption("📨 Sent to your professor as an anonymous topic (no name).")
+                            st.caption("Sent to your professor as an anonymous topic (no name).")
                         if not mastery:
                             st.caption("Nothing explained yet.")
                         if qr:
                             with st.expander("Quiz answers (unlocked)"):
                                 for j, r in enumerate(qr["review"], 1):
-                                    st.markdown(f"{'✅' if r['ok'] else '❌'} **{j}.** {r['q']}  \n"
+                                    html(f"{ic('circle-check', 16, '#1f9d55') if r['ok'] else ic('circle-x', 16, '#d64545')}**{j}.** {r['q']}  \n"
                                                 f"Correct: **{r['correct']}**  \n{r['explanation']}")
                                     st.caption(f"Source: {r['source']}")
             st.button("Start a new session", on_click=fresh_flow, key=k("again"))
