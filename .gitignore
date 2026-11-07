@@ -21,3 +21,5 @@ data/streaks.json
 # teammates zips / exports (integrated into app/)
 *.zip
 AI TA Dashboard*.html
+data/roster.json
+data/course.json

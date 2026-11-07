@@ -11,6 +11,7 @@ from pathlib import Path
 import networkx as nx
 from pydantic import ValidationError
 
+import course
 import guardrails
 from graph import concept_name, graph_for_prompt, load_graph
 from llm import LLMError, chat
@@ -42,6 +43,7 @@ def _examiner_input(history, speaker, mode, participants) -> str:
     return "\n\n".join([
         f"GRAPH:\n{graph_for_prompt()}",
         f"MISCONCEPTION_CATALOGUE:\n{json.dumps(MISCONCEPTIONS, ensure_ascii=False)}",
+        f"ALLOWED_TO_PLANT_TODAY (set by the professor; plant ONLY these): {', '.join(course.allowed_misconceptions()) or 'none'}",
         f"MODE: {mode}",
         f"PARTICIPANTS: {', '.join(participants) if mode == 'group' else speaker}",
         f"SPEAKER: {speaker}",
@@ -75,7 +77,9 @@ def _validate_ids(exam: ExaminerOutput, participants: list[str], speaker: str) -
     if p:
         if p.concept_id not in G:
             p.concept_id = None
-        if p.planted_misconception_id not in MISCONCEPTIONS:
+        # only catalogue misconceptions the PROFESSOR allowed today may be planted
+        if p.planted_misconception_id not in MISCONCEPTIONS or \
+                p.planted_misconception_id not in course.allowed_misconceptions():
             p.planted_misconception_id, p.planted_misconception = None, None
         if p.ask_peer and (p.ask_peer not in participants or p.ask_peer == speaker):
             p.ask_peer = None

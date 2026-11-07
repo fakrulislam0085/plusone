@@ -70,6 +70,21 @@ section[data-testid="stSidebar"] { background: #fbfbfd; border-right: 1px solid 
 .legend { color: var(--muted); font-size: .9rem; }
 .dot { display:inline-block; width:12px; height:12px; border-radius:3px; margin: 0 4px 0 10px; vertical-align:-1px; }
 .dot.g { background:#1f9d55; } .dot.y { background:#d9a21b; } .dot.r { background:#d64545; } .dot.n { background:#9aa1a9; }
+
+/* portal */
+.profile { background:#fff; border:1px solid var(--line); border-radius:20px; padding:22px 26px; margin-bottom:16px;
+           box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.05); }
+.profile .bar { width:44px; height:4px; border-radius:4px; background: linear-gradient(90deg,#00a651,#9be15d); margin-bottom:10px; }
+.profile h3 { margin:0 0 2px; font-size:1.5rem; }
+.profile .facts { display:flex; gap:28px; flex-wrap:wrap; margin-top:12px; }
+.profile .facts div { font-size:.85rem; color: var(--muted); }
+.profile .facts b { display:block; color: var(--ink); font-size:.95rem; font-weight:600; }
+.course-off { border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-top:8px; opacity:.55; background:#fafafa; }
+.crumbs { color: var(--muted); font-size:.9rem; margin: 0 0 6px; }
+.crumbs b { color: var(--ink); }
+.chip { display:inline-block; font-size:.78rem; font-weight:600; padding:3px 10px; border-radius:99px; }
+.chip.open { background:#e3f4e9; color:#007a3d; } .chip.done { background:#eef0f3; color:#4a4a50; }
+.chip.locked { background:#f3f0ea; color:#8a6d3b; }
 </style>
 """
 
@@ -99,7 +114,7 @@ STEP_NAMES = ["Start", "Quiz", "Teach Matteo", "Summary"]
 
 def header() -> None:
     st.markdown("<div class='topbar'><div class='brand'>➕ Plus<span>One</span></div>"
-                "<div class='tagline'>Learn Physics by teaching it · Physics I · Newton's laws</div></div>",
+                "<div class='tagline'>Campus portal · demo</div></div>",
                 unsafe_allow_html=True)
 
 
@@ -109,3 +124,14 @@ def steps(current: int) -> None:
         cls = "on" if i == current else ("done" if i < current else "")
         parts.append(f"<div class='step {cls}'><b>{'✓' if i < current else i}</b>{name}</div>")
     st.markdown("<div class='steps'>" + "".join(parts) + "</div>", unsafe_allow_html=True)
+
+
+def profile(name: str, subtitle: str, facts: list[tuple[str, str]]) -> None:
+    items = "".join(f"<div>{k}<b>{v}</b></div>" for k, v in facts)
+    st.markdown(f"<div class='profile'><div class='bar'></div><h3>{name}</h3><div class='muted'>{subtitle}</div>"
+                f"<div class='facts'>{items}</div></div>", unsafe_allow_html=True)
+
+
+def crumbs(parts: list[str]) -> None:
+    st.markdown("<div class='crumbs'>" + " › ".join(parts[:-1] + [f"<b>{parts[-1]}</b>"]) + "</div>",
+                unsafe_allow_html=True)

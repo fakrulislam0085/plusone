@@ -1,9 +1,9 @@
-"""PlusOne: Streamlit UI.  Run:  .venv\\Scripts\\streamlit run app/main.py
+"""PlusOne campus portal (demo).  Run:  .venv\\Scripts\\streamlit run app/main.py
 
-Views (top switch):  Student | Professor
-Student flow:  1 Start -> 2 Quiz -> 3 Teach Matteo -> 4 Summary
-Every step has the same nav row under the step bar: [← Back]  ...  [Next action →]
-All navigation goes through on_click callbacks (one click = one move, no lost state).
+Pages:  Home (portal)  ->  Course: Physics I (unit cards)  ->  Unit: Newton's laws
+Unit flow (student):  1 Start -> 2 Quiz -> 3 Teach Matteo -> 4 Summary
+Professor: Home -> Physics I console (Class insights · Quiz · Course controls)
+Log in as any of the 10 SYNTHETIC demo students or the professor (left menu).
 """
 from __future__ import annotations
 
@@ -11,35 +11,101 @@ import json
 
 import streamlit as st
 
+import course
+import demo_data
 import professor
 import quiz as quizmod
 import streaks
 import style
 from graph import band, concept_name, load_graph, render_html
 from orchestrator import run_turn
-from tools import FLAGS_PATH, STUDENTS_DIR, load_student, mastery_view, trace_root_cause
+from tools import load_student, mastery_view, trace_root_cause
 
-DEMO_GROUP = ["Alex", "Bea", "Chris", "Dani"]  # synthetic names from the material pack
-AVATARS = {"Alex": "🧑‍🦱", "Bea": "👩‍🦰", "Chris": "🧑‍🦲", "Dani": "👩‍🦳"}
 STAGES = {"start": 1, "quiz": 2, "teach": 3, "summary": 4}
+AVATARS = {"Alex": "🧑‍🦱", "Bea": "👩‍🦰", "Chris": "🧑‍🦲", "Dani": "👩‍🦳", "Elena": "👩", "Federico": "🧔",
+           "Giulia": "👩‍🦱", "Hamid": "🧑", "Irene": "👱‍♀️", "Luca": "👨"}
 
-st.set_page_config(page_title="PlusOne · Teach Matteo", page_icon="➕", layout="wide",
+st.set_page_config(page_title="PlusOne · Campus portal (demo)", page_icon="➕", layout="wide",
                    initial_sidebar_state="collapsed")
 style.apply()
+demo_data.ensure()
 quizmod.ensure_default()
 
 ss = st.session_state
+ss.setdefault("user", "giulia")
+ss.setdefault("login", ss.user)
+ss.setdefault("page", "home")
 ss.setdefault("stage", "start")
-ss.setdefault("sid", 0)            # session counter: new session -> fresh widget keys
-ss.setdefault("view", "Student")
+ss.setdefault("sid", 0)
+ROSTER = {r["id"]: r for r in demo_data.roster()}
+PROF = {"id": "prof", "name": "Prof. Bianchi", "first": "Prof. Bianchi"}
 
 
 def k(name: str) -> str:
-    """Widget key scoped to the current session, so nothing leaks into a new session."""
     return f"{name}_{ss.sid}"
 
 
-# ---------------------------------------------------------------- state helpers
+def me() -> dict:
+    return PROF if ss.user == "prof" else ROSTER[ss.user]
+
+
+def team_of(sid: str) -> list[dict]:
+    return [r for r in ROSTER.values() if r["team"] == ROSTER[sid]["team"]]
+
+
+# ---------------------------------------------------------------- navigation callbacks
+def goto(page: str) -> None:
+    ss.page = page
+
+
+def open_unit() -> None:
+    if ss.get("stage") == "summary":   # finished last time: start a fresh session
+        fresh_flow()
+    ss.page = "unit"
+
+
+def go(stage: str) -> None:
+    ss.stage = stage
+
+
+def fresh_flow() -> None:
+    ss.sid += 1
+    for key in ("mode", "participants", "quiz_results", "messages", "focus", "root", "last"):
+        ss.pop(key, None)
+    ss.stage = "start"
+
+
+def switch_user() -> None:
+    ss.user = ss.login
+    ss.page = "home"
+    fresh_flow()
+
+
+def reset_demo() -> None:
+    demo_data.seed()
+    fresh_flow()
+    ss.page = "home"
+
+
+def start_session() -> None:
+    mine = me()
+    if ss.get(k("mode")) == "With my study group":
+        ss.mode, ss.participants = "group", [r["first"] for r in team_of(mine["id"])]
+    else:
+        ss.mode, ss.participants = "solo", [mine["first"]]
+    today = quizmod.current()
+    ss.quiz_results = {}
+    for p in ss.participants:        # already answered today? show that result instead of a re-take
+        prev = quizmod.previous(today["id"], p) if today else None
+        if prev:
+            ss.quiz_results[p] = prev
+    ss.messages, ss.focus = None, None
+    if today:
+        ss.stage = "quiz"
+    else:
+        open_chat(None)
+
+
 def greeting(mode: str, focus: str | None) -> str:
     if focus:
         return (f"Ciao{' everyone' if mode == 'group' else ''}! I'm Matteo 👋 I got **{concept_name(focus)}** "
@@ -51,242 +117,273 @@ def greeting(mode: str, focus: str | None) -> str:
             "I'm lost 😅 Can you explain it to me? Where should we start?")
 
 
-def weakest() -> str | None:
-    G = load_graph()
-    weak = [c for r in ss.get("quiz_results", {}).values() for c in r["weak_concepts"] if c in G]
-    return weak[0] if weak else None
-
-
-def go(stage: str) -> None:
-    ss.stage = stage
-
-
-def start_session() -> None:
-    mode = "group" if ss.get(k("mode")) == "Study group" else "solo"
-    if mode == "solo":
-        participants = [(ss.get(k("name")) or "You").strip() or "You"]
-    else:
-        raw = ss.get(k("group")) or ", ".join(DEMO_GROUP)
-        participants = [n.strip() for n in raw.split(",") if n.strip()] or DEMO_GROUP
-    ss.mode, ss.participants, ss.quiz_results = mode, participants, {}
-    ss.messages, ss.focus = None, None
-    ss.stage = "quiz" if quizmod.current() else "teach"
-    if ss.stage == "teach":
-        open_chat(None)
-
-
 def open_chat(focus: str | None) -> None:
-    """Go to the teaching step. Keeps the existing chat if you come back to it."""
     if ss.get("messages") is None or (focus is not None and ss.get("focus") != focus and len(ss.messages) <= 1):
         ss.messages = [{"role": "assistant", "speaker": "Matteo", "text": greeting(ss.mode, focus)}]
         ss.root, ss.last, ss.focus = {}, None, focus
     ss.stage = "teach"
 
 
-def new_session() -> None:
-    ss.sid += 1
-    for key in ("mode", "participants", "quiz_results", "messages", "focus", "root", "last"):
-        ss.pop(key, None)
-    ss.stage = "start"
+def weakest() -> str | None:
+    G = load_graph()
+    weak = [c for r in ss.get("quiz_results", {}).values() for c in r["weak_concepts"] if c in G]
+    return weak[0] if weak else None
 
 
-def reset_demo_data() -> None:
-    for p in STUDENTS_DIR.glob("*.json"):
-        p.unlink()
-    if FLAGS_PATH.exists():
-        FLAGS_PATH.unlink()
-    quizmod.reset()
-    streaks.reset()
-    new_session()
-
-
-def nav(back: tuple | None = None, primary: tuple | None = None, secondary: tuple | None = None,
-        where: str = "top") -> None:
-    """One consistent row: (label, callback[, args]) for back / secondary / primary."""
-    left, _, mid, right = st.columns([2, 4, 2, 3])
+def nav(back=None, primary=None, secondary=None, where="top") -> None:
+    left, _, mid, right = st.columns([2, 3, 2, 3])
     if back:
-        left.button(back[0], on_click=back[1], args=back[2] if len(back) > 2 else (), key=k(f"nav_back_{where}"),
+        left.button(back[0], on_click=back[1], args=back[2] if len(back) > 2 else (), key=k(f"b_{where}"),
                     width="stretch")
     if secondary:
         mid.button(secondary[0], on_click=secondary[1], args=secondary[2] if len(secondary) > 2 else (),
-                   key=k(f"nav_secondary_{where}"), width="stretch")
+                   key=k(f"s_{where}"), width="stretch")
     if primary:
-        disabled = len(primary) > 3 and primary[3]
-        right.button(primary[0], on_click=primary[1], args=primary[2] if len(primary) > 2 else (),
-                     type="primary", disabled=disabled, key=k(f"nav_primary_{where}"), width="stretch")
+        right.button(primary[0], on_click=primary[1], args=primary[2] if len(primary) > 2 else (), type="primary",
+                     disabled=len(primary) > 3 and primary[3], key=k(f"p_{where}"), width="stretch")
 
 
-# ---------------------------------------------------------------- sidebar (presenter tools only)
-with st.sidebar:
-    st.markdown("#### Presenter tools")
-    st.button("🧹 Reset demo data", on_click=reset_demo_data,
-              help="Deletes student memory, flags, quiz answers and today's streaks; back to Start.")
-    st.caption("Course material: demo pack aligned with OpenStax University Physics Vol. 1, Ch. 5 "
-               "(CC BY 4.0). Not official PoliTO notes. Names and past sessions are synthetic.")
-
-# ---------------------------------------------------------------- header + view switch
+# ================================================================= layout: left menu + content
 style.header()
-view = st.segmented_control("View", ["Student", "Professor"], key="view", label_visibility="collapsed")
-view = view or "Student"   # clicking the selected segment again unselects it: treat as Student
+menu, main = st.columns([1, 5], gap="large")
+with menu:
+    st.selectbox("Logged in as (demo)", ["prof"] + list(ROSTER), key="login", on_change=switch_user,
+                 format_func=lambda u: "👩‍🏫 Prof. Bianchi" if u == "prof" else f"🎓 {ROSTER[u]['name']}")
+    st.button("🏠  Home", on_click=goto, args=("home",), width="stretch",
+              type="primary" if ss.page == "home" else "secondary")
+    st.button("📘  Physics I", on_click=goto, args=("course",), width="stretch",
+              type="primary" if ss.page in ("course", "unit") else "secondary")
+    st.divider()
+    st.button("🧹 Reset demo", on_click=reset_demo, width="stretch",
+              help="Restore the 10 synthetic students, today's quiz and flags to their starting state.")
+    st.caption("Demo portal. All students, numbers and past sessions are synthetic. Material: OpenStax-aligned "
+               "demo pack (CC BY 4.0), not official university notes.")
 
-# ================================================================= PROFESSOR
-if view == "Professor":
-    professor.render()
-    st.stop()
+with main:
+    user = me()
+    is_prof = user["id"] == "prof"
 
-# ================================================================= STUDENT
-style.steps(STAGES[ss.stage])
-today = quizmod.current()
-
-# ---------------- 1 start
-if ss.stage == "start":
-    _, mid, _ = st.columns([1, 2, 1])
-    with mid:
-        with st.container(border=True):
-            st.markdown("### Who is learning today?")
-            st.caption("Topic: **Physics I · Newton's laws**. Take today's quiz, then teach Matteo what you missed.")
-            mode_label = st.radio("Mode", ["Just me", "Study group"], horizontal=True, key=k("mode"),
-                                  label_visibility="collapsed")
-            if mode_label == "Study group":
-                raw = st.text_input("Group members (comma separated)", value=", ".join(DEMO_GROUP), key=k("group"))
-                members = [n.strip() for n in raw.split(",") if n.strip()] or DEMO_GROUP
-                st.markdown(f"🔥 **Team streak: {streaks.team_streak(members)} sessions**. "
-                            "It grows when everyone answers the quiz.")
+    # ------------------------------------------------------------- HOME
+    if ss.page == "home":
+        left, right = st.columns([3, 2], gap="large")
+        with left:
+            if is_prof:
+                style.profile(user["name"], "Teaching staff", [("Department", "Applied Physics (demo)"),
+                                                                ("Courses", "1 this term")])
             else:
-                name = st.text_input("Your first name", value="You", key=k("name")).strip() or "You"
-                st.markdown(f"🔥 **{streaks.streak(name)}-session streak**. Today's quiz keeps it going.")
-            st.button("Start  →", on_click=start_session, type="primary", width="stretch", key=k("start"))
-        st.markdown("<p class='muted' style='text-align:center'>Matteo never gives answers. "
-                    "Your professor only sees anonymous topics, never your name.</p>", unsafe_allow_html=True)
-
-# ---------------- 2 quiz
-elif ss.stage == "quiz":
-    focus = weakest()
-    done = bool(ss.quiz_results)
-    quiz_nav = dict(back=("←  Back", go, ("start",)),
-                    secondary=None if done else ("Skip quiz  →", open_chat, (None,)),
-                    primary=(f"Teach Matteo: {concept_name(focus)}  →" if focus else "Teach Matteo  →",
-                             open_chat, (focus,), not done))
-    nav(**quiz_nav)
-    _, mid, _ = st.columns([1, 3, 1])
-    with mid:
-        st.markdown(f"### {today['title']}")
-        st.caption(f"{len(today['questions'])} questions · about 3 minutes · answers unlock after you teach "
-                   "Matteo · graded by code, not by AI")
-        for person, r in ss.quiz_results.items():
+                style.profile(user["name"], f"Student number {user['matricola']}",
+                              [("Programme", user["program"]), ("Cohort", user["cohort"]), ("Study group", user["team"])])
             with st.container(border=True):
-                st.markdown(f"**{person}: {r['score']} / {r['max']}** · 🔥 streak {streaks.streak(person)}")
-                st.markdown("To work on: " + ", ".join(f"**{concept_name(c)}**" for c in r["weak_concepts"])
-                            if r["weak_concepts"] else "All correct. Now prove it: can you teach it?")
-        todo = [p for p in ss.participants if p not in ss.quiz_results]
-        if todo:
-            taker = (st.radio("Who is taking the quiz?", todo, horizontal=True, key=k("taker"))
-                     if ss.mode == "group" else todo[0])
-            with st.form(k(f"quiz_{taker}")):
-                answers = []
-                for i, q in enumerate(quizmod.student_view(today), 1):
-                    with st.container(border=True):
-                        a = st.radio(f"**{i}.** {q['q']}", q["options"], index=None, key=k(f"{taker}_{q['id']}"))
-                        answers.append(None if a is None else q["options"].index(a))
-                if st.form_submit_button("Submit answers", type="primary"):
-                    if None in answers:
-                        st.warning(f"Answer all {len(answers)} questions first "
-                                   f"({answers.count(None)} left).")
+                st.markdown("#### 📚 Courses · 2026/27")
+                a, b = st.columns([4, 1], vertical_alignment="center")
+                a.markdown(f"**{course.COURSE['name']}**  \n<span class='muted'>{course.COURSE['code']} · "
+                           f"{course.COURSE['cfu']} CFU · {'you teach this course' if is_prof else course.COURSE['teacher']}"
+                           "</span>", unsafe_allow_html=True)
+                b.button("Open →", on_click=goto, args=("course",), type="primary", key="open_course", width="stretch")
+                if not is_prof:
+                    for name, cfu in course.OTHER_COURSES:
+                        st.markdown(f"<div class='course-off'><b>{name}</b><br><span class='muted'>{cfu} · not part "
+                                    "of this demo</span></div>", unsafe_allow_html=True)
+        with right:
+            today = quizmod.current()
+            if not is_prof and course.announcement():
+                with st.container(border=True):
+                    st.markdown("#### 📣 From your professor")
+                    st.markdown(course.announcement())
+            with st.container(border=True):
+                st.markdown("#### 📅 Today")
+                st.markdown("**10:00 · Physics I lecture**  \nNewton's laws")
+                if today:
+                    n, size, _goal = streaks.class_today(today["id"])
+                    st.markdown(f"**Until 18:00 · Session quiz open**  \n{n} of {size} students answered")
+            if not is_prof:
+                with st.container(border=True):
+                    st.markdown("#### ➕ PlusOne")
+                    team = team_of(user["id"])
+                    st.markdown(f"🔥 **{streaks.streak(user['id'])}-session streak**  \n"
+                                f"{user['team']}: {', '.join(r['first'] for r in team)} · "
+                                f"team streak 🔥 {streaks.team_streak([r['id'] for r in team])}")
+
+    # ------------------------------------------------------------- COURSE
+    elif ss.page == "course":
+        style.crumbs(["Home", "Physics I"])
+        if is_prof:
+            st.markdown("### Physics I · Professor console")
+            professor.render()
+        else:
+            st.markdown("### Physics I")
+            st.caption(f"{course.COURSE['code']} · {course.COURSE['cfu']} CFU · {course.COURSE['teacher']}")
+            units = course.units()
+            for row in (units[:3], units[3:]):
+                cols = st.columns(3, gap="medium")
+                for col, u in zip(cols, row):
+                    with col:
+                        with st.container(border=True):
+                            chip = {"done": "✅ Completed", "open": "🟢 Open now", "locked": "🔒 Locked"}[u["status"]]
+                            st.markdown(f"<span class='chip {u['status']}'>{chip}</span>", unsafe_allow_html=True)
+                            st.markdown(f"#### {u['title']}")
+                            st.caption(u["week"])
+                            can_open = u["status"] == "open" and u["has_content"]
+                            label = ("Open →" if can_open else "No material yet" if u["status"] == "open"
+                                     else "Completed" if u["status"] == "done" else "Locked by professor")
+                            st.button(label, key=f"unit_{u['id']}", disabled=not can_open, width="stretch",
+                                      type="primary" if can_open else "secondary", on_click=open_unit)
+
+    # ------------------------------------------------------------- UNIT (student flow)
+    elif is_prof:
+        st.info("This is the student view of a unit. Open Physics I for the professor console.")
+        st.button("Open Physics I console", on_click=goto, args=("course",), type="primary")
+    else:
+        style.crumbs(["Home", "Physics I", "Newton's laws"])
+        st.button("← Physics I", on_click=goto, args=("course",), key="back_course")
+        style.steps(STAGES[ss.stage])
+        today = quizmod.current()
+
+        if ss.stage == "start":
+            _, mid, _ = st.columns([1, 3, 1])
+            with mid:
+                with st.container(border=True):
+                    st.markdown("### Newton's laws · how do you want to study?")
+                    team = team_of(user["id"])
+                    st.radio("Mode", ["On my own", "With my study group"], key=k("mode"), horizontal=True,
+                             label_visibility="collapsed")
+                    if ss.get(k("mode")) == "With my study group":
+                        st.markdown(f"👥 **{user['team']}**: {', '.join(r['first'] for r in team)} · "
+                                    f"team streak 🔥 {streaks.team_streak([r['id'] for r in team])}  \n"
+                                    "<span class='muted'>Sit together; pick who's speaking as you go.</span>",
+                                    unsafe_allow_html=True)
                     else:
-                        ss.quiz_results[taker] = quizmod.submit(today["id"], taker, answers)
-                        st.rerun()
-        if done:
-            st.success("Quiz done. Now teach Matteo what you missed."
-                       + (" Other members can still take it." if todo else ""))
-    nav(**quiz_nav, where="bottom")
+                        st.markdown(f"🔥 **{streaks.streak(user['id'])}-session streak**. Today's quiz keeps it going.")
+                    st.caption("You take today's quiz, then teach Matteo what you missed. He never gives answers; "
+                               "your professor only sees anonymous topics.")
+                    st.button("Start  →", on_click=start_session, type="primary", width="stretch", key=k("start"))
 
-# ---------------- 3 teach
-elif ss.stage == "teach":
-    mode, participants = ss.mode, ss.participants
-    nav(back=("←  Back to quiz", go, ("quiz",)) if today else ("←  Back", go, ("start",)),
-        primary=("Finish session  →", go, ("summary",)))
-    left, right = st.columns([3, 2], gap="large")
-    with left:
-        speaker = (st.radio("Who's speaking?", participants, horizontal=True, key=k("speaker"))
-                   if mode == "group" else participants[0])
-        chat_box = st.container(height=470)
-        with chat_box:
-            for m in ss.messages:
-                if m["role"] == "assistant":
-                    with st.chat_message("assistant", avatar="🤔"):
-                        st.markdown(m["text"])
-                else:
-                    with st.chat_message("user", avatar=AVATARS.get(m["speaker"], "🧑‍🎓")):
-                        st.markdown(f"**{m['speaker']}:** {m['text']}" if mode == "group" else m["text"])
-        prompt = st.chat_input(f"{speaker}, explain something to Matteo…", key=k("chat"))
-        if prompt:
-            ss.messages.append({"role": "user", "speaker": speaker, "text": prompt})
-            with chat_box:
-                with st.chat_message("user", avatar=AVATARS.get(speaker, "🧑‍🎓")):
-                    st.markdown(f"**{speaker}:** {prompt}" if mode == "group" else prompt)
-                with st.chat_message("assistant", avatar="🤔"):
-                    with st.spinner("Matteo is thinking…"):
-                        result = run_turn(ss.messages, speaker, mode, participants)
-            ss.messages.append({"role": "assistant", "speaker": "Matteo", "text": result["reply"]})
-            ss.last = result
-            if result["root_cause"] and result["root_cause"].get("found"):
-                ss.root[speaker] = result["root_cause"]
-            st.rerun()
-    with right:
-        student = load_student(speaker)
-        root = ss.root.get(speaker)
-        st.markdown(f"#### {speaker}'s topic map")
-        st.iframe(render_html(mastery_view(student), highlight=[p["id"] for p in root["path"]] if root else []),
-                  height=400)
-        st.markdown("<p class='legend'><span class='dot g'></span>explained well <span class='dot y'></span>almost "
-                    "<span class='dot r'></span>to fix <span class='dot n'></span>not yet</p>", unsafe_allow_html=True)
-        with st.container(border=True):
-            st.markdown("#### 🧭 Why am I stuck?")
-            if root:
-                st.markdown(root["explanation"])
-                st.caption("Source: " + " · ".join(p["source"] for p in root["path"]))
-            else:
-                st.caption("Nothing yet. If you get something wrong, this card shows you why.")
-        if ss.last:
-            with st.expander("Behind the scenes (what the AI did)"):
-                for a in ss.last["actions"] or [{"tool": "none", "args": "", "result": "no actions"}]:
-                    st.markdown(f"- `{a['tool']}` {a['args']} → {a['result']}")
-                if ss.last["exam"]:
-                    st.code(json.dumps(ss.last["exam"], indent=1, ensure_ascii=False), language="json")
+        elif ss.stage == "quiz":
+            focus, done = weakest(), bool(ss.quiz_results)
+            qnav = dict(back=("←  Back", go, ("start",)),
+                        secondary=None if done else ("Skip quiz  →", open_chat, (None,)),
+                        primary=(f"Teach Matteo: {concept_name(focus)}  →" if focus else "Teach Matteo  →",
+                                 open_chat, (focus,), not done))
+            nav(**qnav)
+            _, mid, _ = st.columns([1, 4, 1])
+            with mid:
+                st.markdown(f"### {today['title']}")
+                st.caption(f"{len(today['questions'])} questions · about 3 minutes · answers unlock after you teach "
+                           "Matteo · graded by code, not by AI")
+                for person, r in ss.quiz_results.items():
+                    with st.container(border=True):
+                        st.markdown(f"**{person}: {r['score']} / {r['max']}** · 🔥 streak {streaks.streak(person)}")
+                        st.markdown("To work on: " + ", ".join(f"**{concept_name(c)}**" for c in r["weak_concepts"])
+                                    if r["weak_concepts"] else "All correct. Now prove it: can you teach it?")
+                todo = [p for p in ss.participants if p not in ss.quiz_results]
+                if todo:
+                    taker = (st.radio("Who is taking the quiz?", todo, horizontal=True, key=k("taker"))
+                             if ss.mode == "group" else todo[0])
+                    with st.form(k(f"quiz_{taker}")):
+                        answers = []
+                        for i, q in enumerate(quizmod.student_view(today), 1):
+                            with st.container(border=True):
+                                a = st.radio(f"**{i}.** {q['q']}", q["options"], index=None,
+                                             key=k(f"{taker}_{q['id']}"))
+                                answers.append(None if a is None else q["options"].index(a))
+                        if st.form_submit_button("Submit answers", type="primary"):
+                            if None in answers:
+                                st.warning(f"Answer all {len(answers)} questions first ({answers.count(None)} left).")
+                            else:
+                                ss.quiz_results[taker] = quizmod.submit(today["id"], taker, answers)
+                                st.rerun()
+                if done:
+                    st.success("Quiz done. Now teach Matteo what you missed."
+                               + (" Other members can still take it." if todo else ""))
+            nav(**qnav, where="bottom")
 
-# ---------------- 4 summary
-else:
-    nav(back=("←  Keep teaching", go, ("teach",)), primary=("New session  ✓", new_session))
-    G = load_graph()
-    st.markdown("### Session summary")
-    if ss.mode == "group":
-        st.markdown(f"🔥 **Team streak: {streaks.team_streak(ss.participants)} sessions**")
-    cols = st.columns(min(len(ss.participants), 4), gap="large")
-    for i, person in enumerate(ss.participants):
-        mastery = load_student(person)["mastery"]
-        good = [c for c, m in mastery.items() if m["score"] is not None and m["score"] >= 2 and c in G]
-        fix = [c for c, m in mastery.items() if m["score"] is not None and m["score"] <= 1 and c in G]
-        qr = ss.quiz_results.get(person)
-        with cols[i % len(cols)]:
-            with st.container(border=True):
-                st.markdown(f"#### {person} · 🔥 {streaks.streak(person)}")
-                if qr:
-                    st.markdown(f"**Quiz:** {qr['score']} / {qr['max']}")
-                if not mastery:
-                    st.caption("Didn't explain anything to Matteo this time.")
-                if good:
-                    st.markdown("**✅ Explained well**  \n" + "  \n".join(
-                        f"{'🟩' if band(mastery[c]['score']) == 'solid' else '🟨'} {concept_name(c)}" for c in good))
-                if fix:
-                    st.markdown("**🔁 To review**")
-                    for c in fix:
-                        rc = trace_root_cause(person, c)
-                        st.markdown(f"🟥 **{concept_name(c)}**  \n{rc['explanation']}")
-                        st.caption(f"Read: {G.nodes[rc.get('root_id', c)]['source']}")
-                    st.caption("📨 Sent to your professor as an anonymous topic (no name).")
-                if qr:
-                    with st.expander("Quiz answers (unlocked)"):
-                        for j, r in enumerate(qr["review"], 1):
-                            st.markdown(f"{'✅' if r['ok'] else '❌'} **{j}.** {r['q']}  \n"
-                                        f"Correct: **{r['correct']}**  \n{r['explanation']}")
-                            st.caption(f"Source: {r['source']}")
+        elif ss.stage == "teach":
+            mode, participants = ss.mode, ss.participants
+            nav(back=("←  Back to quiz", go, ("quiz",)) if today else ("←  Back", go, ("start",)),
+                primary=("Finish session  →", go, ("summary",)))
+            left, right = st.columns([3, 2], gap="large")
+            with left:
+                speaker = (st.radio("Who's speaking?", participants, horizontal=True, key=k("speaker"))
+                           if mode == "group" else participants[0])
+                chat_box = st.container(height=460)
+                with chat_box:
+                    for m in ss.messages:
+                        if m["role"] == "assistant":
+                            with st.chat_message("assistant", avatar="🤔"):
+                                st.markdown(m["text"])
+                        else:
+                            with st.chat_message("user", avatar=AVATARS.get(m["speaker"], "🧑‍🎓")):
+                                st.markdown(f"**{m['speaker']}:** {m['text']}" if mode == "group" else m["text"])
+                prompt = st.chat_input(f"{speaker}, explain something to Matteo…", key=k("chat"))
+                if prompt:
+                    ss.messages.append({"role": "user", "speaker": speaker, "text": prompt})
+                    with chat_box:
+                        with st.chat_message("user", avatar=AVATARS.get(speaker, "🧑‍🎓")):
+                            st.markdown(f"**{speaker}:** {prompt}" if mode == "group" else prompt)
+                        with st.chat_message("assistant", avatar="🤔"):
+                            with st.spinner("Matteo is thinking…"):
+                                result = run_turn(ss.messages, speaker, mode, participants)
+                    ss.messages.append({"role": "assistant", "speaker": "Matteo", "text": result["reply"]})
+                    ss.last = result
+                    if result["root_cause"] and result["root_cause"].get("found"):
+                        ss.root[speaker] = result["root_cause"]
+                    st.rerun()
+            with right:
+                root = ss.root.get(speaker)
+                st.markdown(f"#### {speaker}'s topic map")
+                st.iframe(render_html(mastery_view(load_student(speaker)),
+                                      highlight=[p["id"] for p in root["path"]] if root else []), height=380)
+                st.markdown("<p class='legend'><span class='dot g'></span>explained well <span class='dot y'></span>"
+                            "almost <span class='dot r'></span>to fix <span class='dot n'></span>not yet</p>",
+                            unsafe_allow_html=True)
+                with st.container(border=True):
+                    st.markdown("#### 🧭 Why am I stuck?")
+                    if root:
+                        st.markdown(root["explanation"])
+                        st.caption("Source: " + " · ".join(p["source"] for p in root["path"]))
+                    else:
+                        st.caption("Nothing yet. If you get something wrong, this card shows you why.")
+                if ss.last:
+                    with st.expander("Behind the scenes (what the AI did)"):
+                        for a in ss.last["actions"] or [{"tool": "none", "args": "", "result": "no actions"}]:
+                            st.markdown(f"- `{a['tool']}` {a['args']} → {a['result']}")
+                        if ss.last["exam"]:
+                            st.code(json.dumps(ss.last["exam"], indent=1, ensure_ascii=False), language="json")
+
+        else:  # summary
+            nav(back=("←  Keep teaching", go, ("teach",)), primary=("Back to Physics I  ✓", goto, ("course",)))
+            G = load_graph()
+            st.markdown("### Session summary")
+            if ss.mode == "group":
+                st.markdown(f"🔥 **Team streak: {streaks.team_streak(ss.participants)} sessions**")
+            cols = st.columns(min(len(ss.participants), 4), gap="large")
+            for i, person in enumerate(ss.participants):
+                mastery = load_student(person)["mastery"]
+                good = [c for c, m in mastery.items() if m["score"] is not None and m["score"] >= 2 and c in G]
+                fix = [c for c, m in mastery.items() if m["score"] is not None and m["score"] <= 1 and c in G]
+                qr = ss.quiz_results.get(person)
+                with cols[i % len(cols)]:
+                    with st.container(border=True):
+                        st.markdown(f"#### {person} · 🔥 {streaks.streak(person)}")
+                        if qr:
+                            st.markdown(f"**Quiz:** {qr['score']} / {qr['max']}")
+                        if good:
+                            st.markdown("**✅ Explained well**  \n" + "  \n".join(
+                                f"{'🟩' if band(mastery[c]['score']) == 'solid' else '🟨'} {concept_name(c)}"
+                                for c in good))
+                        if fix:
+                            st.markdown("**🔁 To review**")
+                            for c in fix:
+                                rc = trace_root_cause(person, c)
+                                st.markdown(f"🟥 **{concept_name(c)}**  \n{rc['explanation']}")
+                                st.caption(f"Read: {G.nodes[rc.get('root_id', c)]['source']}")
+                            st.caption("📨 Sent to your professor as an anonymous topic (no name).")
+                        if not mastery:
+                            st.caption("Nothing explained yet.")
+                        if qr:
+                            with st.expander("Quiz answers (unlocked)"):
+                                for j, r in enumerate(qr["review"], 1):
+                                    st.markdown(f"{'✅' if r['ok'] else '❌'} **{j}.** {r['q']}  \n"
+                                                f"Correct: **{r['correct']}**  \n{r['explanation']}")
+                                    st.caption(f"Source: {r['source']}")
+            st.button("Start a new session", on_click=fresh_flow, key=k("again"))

@@ -108,12 +108,25 @@ def submit(quiz_id: str, student: str, answers: list[int | None]) -> dict:
     total = len(quiz["questions"])
     weak = [k for k, (g, t) in concepts.items() if g / t < 0.5]
     sub = {"student": slug(student), "score": score, "max": total, "concepts": concepts,
-           "weak_concepts": weak, "submitted_at": _now()}
+           "weak_concepts": weak, "answers": answers, "submitted_at": _now()}
     db["subs"].setdefault(quiz_id, {})[slug(student)] = sub
     _save(db)
     streaks.record(student, quiz_id)
     log_step("tool.grade_quiz", input={"quiz": quiz_id, "student": slug(student)},
              output={"score": f"{score}/{total}", "weak": weak})
+    return {**sub, "review": review}
+
+
+def previous(quiz_id: str, student: str) -> dict | None:
+    """A student's earlier submission for this quiz, with the review rebuilt (or None)."""
+    db = _load()
+    sub = db["subs"].get(quiz_id, {}).get(slug(student))
+    if not sub or "answers" not in sub:
+        return None
+    quiz = db["quizzes"][quiz_id]
+    review = [{"q": q["q"], "your": None if a is None else q["options"][a], "correct": q["options"][q["correct"]],
+               "ok": a == q["correct"], "explanation": q["explanation"], "source": q["source"],
+               "concept": q["concept"]} for q, a in zip(quiz["questions"], sub["answers"])]
     return {**sub, "review": review}
 
 
