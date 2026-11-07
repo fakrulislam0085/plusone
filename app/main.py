@@ -94,9 +94,9 @@ def reset_demo() -> None:
     ss.page = "home"
 
 
-def start_session() -> None:
+def start_session(choice: str = "solo") -> None:
     mine = me()
-    if ss.get(k("mode")) == "With my study group":
+    if choice == "group":
         ss.mode, ss.participants = "group", [r["first"] for r in team_of(mine["id"])]
     else:
         ss.mode, ss.participants = "solo", [mine["first"]]
@@ -255,27 +255,39 @@ with main:
     else:
         style.crumbs(["Home", "Physics I", "Newton's laws"])
         st.button("← Physics I", on_click=goto, args=("course",), key="back_course")
+        newton = next(u for u in course.units() if u["id"] == "newton")
+        if newton["status"] != "open":   # professor locked it while you were inside
+            st.warning("Your professor has closed this unit for now. Your progress is saved.")
+            st.stop()
         style.steps(STAGES[ss.stage])
         today = quizmod.current()
 
         if ss.stage == "start":
-            _, mid, _ = st.columns([1, 3, 1])
-            with mid:
+            team = team_of(user["id"])
+            fl = ic("flame", 16, "#e8590c")
+            st.markdown("### How do you want to study Newton's laws today?")
+            st.caption("Either way: today's quiz → teach Matteo what you missed → a final check on your own. "
+                       "Matteo is built not to give answers; your professor only sees anonymous topics.")
+            solo, group = st.columns(2, gap="large")
+            with solo:
                 with st.container(border=True):
-                    st.markdown("### Newton's laws · how do you want to study?")
-                    team = team_of(user["id"])
-                    st.radio("Mode", ["On my own", "With my study group"], key=k("mode"), horizontal=True,
-                             label_visibility="collapsed")
-                    if ss.get(k("mode")) == "With my study group":
-                        st.markdown(f"{ic('users', 18)}**{user['team']}**: {', '.join(r['first'] for r in team)} · "
-                                    f"team streak {ic('flame', 16, '#e8590c')}{streaks.team_streak([r['id'] for r in team])}  \n"
-                                    "<span class='muted'>Sit together; pick who's speaking as you go.</span>",
-                                    unsafe_allow_html=True)
-                    else:
-                        html(f"{ic('flame', 16, '#e8590c')}**{streaks.streak(user['id'])}-session streak**. Today's quiz keeps it going.")
-                    st.caption("You take today's quiz, then teach Matteo what you missed. He never gives answers; "
-                               "your professor only sees anonymous topics.")
-                    st.button("Start  →", on_click=start_session, type="primary", width="stretch", key=k("start"))
+                    html(f"<div class='mode-card'><div class='mode-ic solo'>{ic('user', 30, '#00a651', 2)}</div>"
+                         "<div class='mode-title'>On my own</div>"
+                         "<div class='mode-desc'>A one-to-one session: you explain, Matteo asks. Good for "
+                         "checking what <i>you</i> really understand.</div>"
+                         f"<div class='mode-meta'>{fl}<b>{streaks.streak(user['id'])}-session streak</b></div></div>")
+                    st.button("Study on my own  →", on_click=start_session, args=("solo",), type="primary",
+                              width="stretch", key=k("start_solo"))
+            with group:
+                with st.container(border=True):
+                    html(f"<div class='mode-card'><div class='mode-ic group'>{ic('users', 30, '#1d1d1f', 2)}</div>"
+                         f"<div class='mode-title'>With my study group</div>"
+                         f"<div class='mode-desc'>Sit together with <b>{user['team']}</b>: "
+                         f"{', '.join(r['first'] for r in team)}. Matteo is the +1 who asks you to challenge "
+                         "each other.</div>"
+                         f"<div class='mode-meta'>{fl}<b>team streak {streaks.team_streak([r['id'] for r in team])}</b></div></div>")
+                    st.button(f"Study with {user['team']}  →", on_click=start_session, args=("group",),
+                              width="stretch", key=k("start_group"))
 
         elif ss.stage == "quiz":
             focus, done = weakest(), bool(ss.quiz_results)

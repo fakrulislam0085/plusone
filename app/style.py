@@ -85,6 +85,14 @@ section[data-testid="stSidebar"] { background: #fbfbfd; border-right: 1px solid 
 .unit-title { font-size:1.35rem; font-weight:650; letter-spacing:-0.02em; line-height:1.25; color:var(--ink);
               min-height:2.5em; margin:10px 0 2px; }
 .profile .pname { font-size:1.5rem; font-weight:650; letter-spacing:-0.02em; color:var(--ink); margin-bottom:2px; }
+/* study-mode cards */
+.mode-card { min-height: 205px; padding: 6px 4px 4px; }
+.mode-ic { width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+.mode-ic svg { margin-right:0 !important; vertical-align:0 !important; }
+.mode-ic.solo { background:#e3f4e9; } .mode-ic.group { background:#eef0f3; }
+.mode-title { font-size:1.35rem; font-weight:700; letter-spacing:-0.02em; color:var(--ink); margin-bottom:6px; }
+.mode-desc { color:var(--muted); font-size:.95rem; line-height:1.45; min-height:4.4em; }
+.mode-meta { margin-top:12px; font-size:.95rem; color:var(--ink); }
 /* AI teaching audit */
 .audit-hero { border-radius:24px; padding:22px 26px; margin:6px 0 14px; color:#f5f5f7;
               background: radial-gradient(circle at 92% 0%, #3d9a52 0%, #1b4a2a 32%, #111214 70%); }

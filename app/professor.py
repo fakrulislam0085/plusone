@@ -179,7 +179,7 @@ def controls() -> None:
         a.markdown(f"**{u['title']}** · {u['week']}" + ("" if u["has_content"] else "  \n<span class='muted'>no "
                    "material uploaded in this demo</span>"), unsafe_allow_html=True)
         new = b.segmented_control("Status", list(labels), format_func=labels.get, default=u["status"],
-                                  key=f"unit_{u['id']}", label_visibility="collapsed")
+                                  key=f"unit_{u['id']}_{st.session_state.get('sid', 0)}", label_visibility="collapsed")
         if new and new != u["status"]:
             course.set_unit_status(u["id"], new)
             st.rerun()
