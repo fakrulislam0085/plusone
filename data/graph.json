@@ -10,7 +10,7 @@
      "source": "OpenStax UP1 §5.1, §5.3; handout Core idea 2 + worked example", "lo": ["LO2"], "misconceptions": ["NET_VS_APPLIED"], "quiz": ["Q02"]},
     {"id": "velocity_vs_acceleration", "name": "Velocity vs acceleration",
      "description": "Velocity is how fast and in which direction a body moves; acceleration is how its velocity changes. A body can move with zero acceleration.",
-     "source": "OpenStax UP1 §5.2; handout Objective LO1", "lo": ["LO1"], "misconceptions": ["FORCE_CAUSES_SPEED", "VELOCITY_FORCE"], "quiz": ["Q05"]},
+     "source": "OpenStax UP1 §5.2; handout Objective LO1", "lo": ["LO1"], "misconceptions": ["FORCE_CAUSES_SPEED", "VELOCITY_FORCE"], "quiz": ["Q01", "Q05"]},
     {"id": "mass_inertia", "name": "Mass and inertia",
      "description": "Mass measures inertia: how strongly a body resists changes in its velocity. More mass means less acceleration for the same net force.",
      "source": "OpenStax UP1 §5.2, §5.3", "lo": ["LO2"], "misconceptions": ["MASS_ACCEL"], "quiz": ["Q03"]},
