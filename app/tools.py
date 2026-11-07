@@ -185,6 +185,16 @@ def flag_for_lecturer(concept_id: str, reason: str, misconception_id: str | None
     return flag
 
 
+def set_flag_status(concept_id: str, status: str, note: str = "") -> None:
+    """Professor decision: 'approved' (plan a follow-up) or 'rejected' (the AI was wrong)."""
+    flags = load_flags()
+    for f in flags:
+        if f["concept_id"] == concept_id and f["status"] == "pending":
+            f["status"], f["professor_note"], f["decided"] = status, note[:200], _now()
+    FLAGS_PATH.write_text(json.dumps(flags, indent=2, ensure_ascii=False), encoding="utf-8")
+    log_step("professor.decision", input={"concept_id": concept_id}, output={"status": status})
+
+
 def misconception_text(mid: str | None) -> str | None:
     return MISCONCEPTIONS.get(mid) if mid else None
 

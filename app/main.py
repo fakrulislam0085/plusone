@@ -6,9 +6,11 @@ from pathlib import Path
 
 import streamlit as st
 
+import professor
+import style
 from graph import render_html
 from orchestrator import run_turn
-from tools import FLAGS_PATH, STUDENTS_DIR, load_flags, load_student, mastery_view
+from tools import FLAGS_PATH, STUDENTS_DIR, load_student, mastery_view
 
 ROOT = Path(__file__).resolve().parent.parent
 DEMO_GROUP = ["Alex", "Bea", "Chris", "Dani"]  # synthetic names from the material pack
@@ -19,6 +21,7 @@ GREETING_GROUP = ("Ciao everyone! I'm Matteo 👋 Thanks for letting me join you
                   "The prof did Newton's laws today and I'm lost 😅 Who wants to start?")
 
 st.set_page_config(page_title="PlusOne · Teach Matteo", page_icon="➕", layout="wide")
+style.apply()
 
 
 def init_state(mode: str) -> None:
@@ -63,9 +66,8 @@ with st.sidebar:
                "Ch. 5 (CC BY 4.0). Not official PoliTO notes. Group names are synthetic.")
 
 # ---------------------------------------------------------------- header
-st.title("➕ PlusOne")
-st.caption("Learn Physics I by teaching Matteo, a confused AI freshman · Newton's laws")
-tab_teach, tab_prof = st.tabs(["🧑‍🎓 Teach Matteo", "👩‍🏫 Professor"])
+style.hero()
+tab_teach, tab_prof = st.tabs(["Teach Matteo", "Professor"])
 
 with tab_teach:
     left, right = st.columns([3, 2], gap="large")
@@ -145,11 +147,4 @@ with tab_teach:
                     st.warning("Examiner unavailable this turn (Matteo answered without a probe).")
 
 with tab_prof:
-    st.subheader("Flagged concepts (anonymized)")
-    flags = load_flags()
-    if not flags:
-        st.caption("No flags yet.")
-    for f in sorted(flags, key=lambda f: -f["count"]):
-        st.markdown(f"**{f['concept_name']}** · seen {f['count']}× · {f['status']}  \n{f['reason']}"
-                    + (f"  \n`{', '.join(f['misconception_ids'])}`" if f["misconception_ids"] else ""))
-    st.info("Full professor view (class heatmap, approve/reject) arrives in Milestone 5.")
+    professor.render()
