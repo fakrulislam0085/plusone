@@ -19,9 +19,9 @@ import streaks
 import style
 from graph import band, concept_name, load_graph, render_html
 from orchestrator import run_turn
-from tools import load_student, mastery_view, trace_root_cause
+from tools import load_student, mastery_view, trace_root_cause, update_mastery
 
-STAGES = {"start": 1, "quiz": 2, "teach": 3, "summary": 4}
+STAGES = {"start": 1, "quiz": 2, "teach": 3, "check": 4, "summary": 5}
 AVATARS = {"Alex": "🧑‍🦱", "Bea": "👩‍🦰", "Chris": "🧑‍🦲", "Dani": "👩‍🦳", "Elena": "👩", "Federico": "🧔",
            "Giulia": "👩‍🦱", "Hamid": "🧑", "Irene": "👱‍♀️", "Luca": "👨"}
 
@@ -70,7 +70,7 @@ def go(stage: str) -> None:
 
 def fresh_flow() -> None:
     ss.sid += 1
-    for key in ("mode", "participants", "quiz_results", "messages", "focus", "root", "last"):
+    for key in ("mode", "participants", "quiz_results", "messages", "focus", "root", "last", "check_results"):
         ss.pop(key, None)
     ss.stage = "start"
 
@@ -122,6 +122,17 @@ def open_chat(focus: str | None) -> None:
         ss.messages = [{"role": "assistant", "speaker": "Matteo", "text": greeting(ss.mode, focus)}]
         ss.root, ss.last, ss.focus = {}, None, focus
     ss.stage = "teach"
+
+
+def weakest_taught() -> str | None:
+    """Topic for the final check when there was no quiz: the weakest topic touched while teaching."""
+    G = load_graph()
+    for person in ss.get("participants", []):
+        m = load_student(person)["mastery"]
+        scored = sorted((v["score"], c) for c, v in m.items() if v["score"] is not None and c in G)
+        if scored:
+            return scored[0][1]
+    return None
 
 
 def weakest() -> str | None:
@@ -299,8 +310,11 @@ with main:
 
         elif ss.stage == "teach":
             mode, participants = ss.mode, ss.participants
+            taught = any(m["role"] == "user" for m in ss.messages)
             nav(back=("←  Back to quiz", go, ("quiz",)) if today else ("←  Back", go, ("start",)),
-                primary=("Finish session  →", go, ("summary",)))
+                primary=("Final check  →", go, ("check",), not taught))
+            if not taught:
+                st.caption("👉 Explain something to Matteo first. The final check unlocks after you've taught him.")
             left, right = st.columns([3, 2], gap="large")
             with left:
                 speaker = (st.radio("Who's speaking?", participants, horizontal=True, key=k("speaker"))
@@ -334,21 +348,65 @@ with main:
                 st.iframe(render_html(mastery_view(load_student(speaker)),
                                       highlight=[p["id"] for p in root["path"]] if root else []), height=380)
                 st.markdown("<p class='legend'><span class='dot g'></span>explained well <span class='dot y'></span>"
-                            "almost <span class='dot r'></span>to fix <span class='dot n'></span>not yet</p>",
-                            unsafe_allow_html=True)
+                            "almost <span class='dot r'></span>to fix <span class='dot n'></span>not yet · "
+                            "<b>pale</b> = seen once, not confirmed yet</p>", unsafe_allow_html=True)
                 with st.container(border=True):
-                    st.markdown("#### 🧭 Why am I stuck?")
+                    st.markdown("#### 🧭 Possible gap to check")
                     if root:
                         st.markdown(root["explanation"])
                         st.caption("Source: " + " · ".join(p["source"] for p in root["path"]))
                     else:
-                        st.caption("Nothing yet. If you get something wrong, this card shows you why.")
+                        st.caption("Nothing yet. If an explanation goes wrong, this card suggests what to check first.")
                 if ss.last:
                     with st.expander("Behind the scenes (what the AI did)"):
                         for a in ss.last["actions"] or [{"tool": "none", "args": "", "result": "no actions"}]:
                             st.markdown(f"- `{a['tool']}` {a['args']} → {a['result']}")
                         if ss.last["exam"]:
                             st.code(json.dumps(ss.last["exam"], indent=1, ensure_ascii=False), language="json")
+
+        elif ss.stage == "check":
+            ss.setdefault("check_results", {})
+            focus_c = ss.get("focus") or weakest_taught()
+            item = quizmod.transfer_item(focus_c)
+            done = bool(ss.check_results)
+            nav(back=("←  Keep teaching", go, ("teach",)), secondary=None if done else ("Skip for now  →", go, ("summary",)),
+                primary=("See my summary  →", go, ("summary",), not done))
+            _, mid, _ = st.columns([1, 4, 1])
+            with mid:
+                st.markdown("### Final check: on your own")
+                st.caption(f"A NEW question on **{concept_name(item['concept'])}**, one you haven't seen. No Matteo, no "
+                           "group: can you apply it alone? " + ("Graded by code." if item["type"] == "single_select"
+                           else "Graded against your professor's criteria."))
+                todo = [p for p in ss.participants if p not in ss.check_results]
+                for person, r in ss.check_results.items():
+                    with st.container(border=True):
+                        s = "pending review" if r["score"] is None else f"{r['score']} / 3"
+                        st.markdown(f"**{person}: {s}** · {'✅ applied it' if r['ok'] else '🔁 not yet'}  \n{r['feedback']}")
+                        with st.expander("What a full answer covers"):
+                            st.markdown("\n".join(f"- {p}" for p in r["model_points"]))
+                if todo:
+                    who = (st.radio("Who is answering?", todo, horizontal=True, key=k("check_who"))
+                           if ss.mode == "group" else todo[0])
+                    with st.form(k(f"check_{who}")):
+                        with st.container(border=True):
+                            st.markdown(f"**{item['id']}.** {item['q']}")
+                            if item["type"] == "single_select":
+                                pick = st.radio("Your answer", item["options"], index=None, key=k(f"chk_{who}"))
+                                ans = None if pick is None else item["options"].index(pick)
+                            else:
+                                ans = st.text_area("Your answer (explain your reasoning)", key=k(f"chk_{who}"), height=140)
+                            st.caption(f"Source: {item['source']}")
+                        if st.form_submit_button("Submit my answer", type="primary"):
+                            if ans is None or (isinstance(ans, str) and len(ans.strip()) < 10):
+                                st.warning("Write (or pick) an answer first.")
+                            else:
+                                with st.spinner("Checking against the criteria…"):
+                                    res = quizmod.grade_check(item["id"], who, ans)
+                                if res["score"] is not None:   # independent evidence for the topic map
+                                    update_mastery(who, item["concept"], res["score"],
+                                                   f"independent final check {item['id']}")
+                                ss.check_results[who] = res
+                                st.rerun()
 
         else:  # summary
             nav(back=("←  Keep teaching", go, ("teach",)), primary=("Back to Physics I  ✓", goto, ("course",)))
@@ -367,9 +425,13 @@ with main:
                         st.markdown(f"#### {person} · 🔥 {streaks.streak(person)}")
                         if qr:
                             st.markdown(f"**Quiz:** {qr['score']} / {qr['max']}")
+                        cr = ss.get("check_results", {}).get(person)
+                        st.markdown(f"**Final check:** {'skipped' if not cr else 'pending review' if cr['score'] is None else str(cr['score']) + ' / 3'}"
+                                    + (" · ✅ applied it alone" if cr and cr["ok"] else ""))
                         if good:
                             st.markdown("**✅ Explained well**  \n" + "  \n".join(
                                 f"{'🟩' if band(mastery[c]['score']) == 'solid' else '🟨'} {concept_name(c)}"
+                                + (" _(seen once, not confirmed yet)_" if mastery[c]["status"] == "needs_confirmation" else "")
                                 for c in good))
                         if fix:
                             st.markdown("**🔁 To review**")

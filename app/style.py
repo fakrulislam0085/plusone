@@ -109,7 +109,7 @@ def hero() -> None:
     st.markdown(HERO, unsafe_allow_html=True)
 
 
-STEP_NAMES = ["Start", "Quiz", "Teach Matteo", "Summary"]
+STEP_NAMES = ["Start", "Quiz", "Teach Matteo", "Final check", "Summary"]
 
 
 def header() -> None:

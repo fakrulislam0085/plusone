@@ -230,3 +230,58 @@ def publish(quiz_id: str) -> None:
 def reset() -> None:
     if PATH.exists():
         PATH.unlink()
+
+
+# ---------------------------------------------------------------- final independent check (transfer)
+CHECKER = (ROOT / "prompts" / "checker.md").read_text(encoding="utf-8")
+# a NEW item (not in today's quiz) for the topic the student taught; reviewed by hand
+TRANSFER = {"newton_third_law": "Q10", "force_interaction": "Q10", "system_boundary": "Q10",
+            "free_body_diagram": "Q10", "weight_normal": "Q10", "static_friction": "Q10", "kinetic_friction": "Q10",
+            "newton_first_law": "Q09", "velocity_vs_acceleration": "Q05",
+            "mass_inertia": "Q03", "newton_second_law": "Q03", "net_force": "Q03", "incline": "Q08"}
+
+
+def _pack_items() -> tuple[dict, dict]:
+    items = {q["id"]: q for q in json.loads((PACK / "quiz_student.json").read_text(encoding="utf-8"))["items"]}
+    key = {q["id"]: q for q in json.loads((PACK / "quiz_instructor_key.json").read_text(encoding="utf-8"))["items"]}
+    return items, key
+
+
+def transfer_item(concept: str | None) -> dict:
+    """Student-safe view of the check question for this topic (no answers)."""
+    items, _ = _pack_items()
+    it = items[TRANSFER.get(concept or "", "Q09")]
+    view = {"id": it["id"], "type": it["type"], "q": it["stem"], "concept": concept or "newton_first_law",
+            "source": ", ".join(s.replace("OS-", "OpenStax UP1 §") for s in it["sources"])}
+    if it["type"] == "single_select":
+        view["options"] = [o["text"] for o in it["options"]]
+    return view
+
+
+def grade_check(item_id: str, student: str, answer) -> dict:
+    """MCQ: graded in code from the key. Written: Checker LLM against the instructor's expected points.
+    Returns {score 0-3, ok, feedback, model_points} and records the result as independent evidence."""
+    items, key = _pack_items()
+    it, k = items[item_id], key[item_id]
+    if it["type"] == "single_select":
+        letters = [o["id"] for o in it["options"]]
+        ok = answer is not None and letters[answer] == k["correct_option"]
+        res = {"score": 3 if ok else 1, "ok": ok, "feedback": k["explanation"],
+               "model_points": [it["options"][letters.index(k["correct_option"])]["text"]], "graded_by": "code"}
+    else:
+        user = (f"QUESTION:\n{it['stem']}\n\nEXPECTED_POINTS:\n" +
+                "\n".join(f"{i}. {p}" for i, p in enumerate(k["expected_points"])) +
+                f"\n\nMISCONCEPTION_FLAGS: {', '.join(k.get('candidate_misconception_flags', []))}"
+                f"\n\nSTUDENT_ANSWER:\n{(answer or '').strip()[:2000]}")
+        try:
+            raw = chat(CHECKER, [{"role": "user", "content": user}], json=True, effort="low", max_tokens=3000)
+            score = max(0, min(3, int(raw.get("score", 0))))
+            res = {"score": score, "ok": score >= 2, "feedback": str(raw.get("feedback", ""))[:300],
+                   "points_met": raw.get("points_met", []), "model_points": k["expected_points"], "graded_by": "AI + criteria"}
+        except (LLMError, ValueError, TypeError) as e:
+            log_step("check_grade_error", output=str(e)[:200])
+            res = {"score": None, "ok": False, "feedback": "Couldn't grade automatically right now; your professor "
+                   "will review it.", "model_points": k["expected_points"], "graded_by": "pending review"}
+    log_step("tool.grade_check", input={"item": item_id, "student": slug(student)},
+             output={"score": res["score"], "graded_by": res["graded_by"]})
+    return res

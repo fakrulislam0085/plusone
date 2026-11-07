@@ -82,7 +82,7 @@ def insights() -> None:
             with a:
                 st.markdown(f"**{G.nodes[c]['name']}**")
                 if f:
-                    st.caption(f"AI: {f['reason']}")
+                    st.caption(f"AI hypothesis: {f['reason']} · in {f['count']} student(s)")
             with b:
                 st.markdown(_bar_html(counts, total), unsafe_allow_html=True)
                 if f:

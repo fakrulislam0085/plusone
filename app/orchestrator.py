@@ -142,9 +142,9 @@ def apply_tools(exam: ExaminerOutput, speaker: str, participants: list[str]) -> 
         f = exam.flag_for_lecturer
         mid = next((m.misconception_id for m in exam.misconceptions
                     if m.concept_id == f.concept_id and m.misconception_id), None)
-        flag = flag_for_lecturer(f.concept_id, f.reason, mid, names=participants + [speaker])
+        flag = flag_for_lecturer(f.concept_id, f.reason, mid, names=participants + [speaker], student=speaker)
         actions.append({"tool": "flag_for_lecturer", "args": f.concept_id,
-                        "result": f"anonymized flag (x{flag['count']})"})
+                        "result": f"anonymized flag ({flag['count']} student(s))"})
     return actions, root
 
 

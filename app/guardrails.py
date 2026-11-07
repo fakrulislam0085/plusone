@@ -20,6 +20,9 @@ BLOCKLIST = [
     (r"\bin summary\b", "summarises like a tutor"),
     (r"\bstep \d\b", "gives a step-by-step solution"),
     (r"\bthe solution (is|would be)\b", "gives the solution"),
+    # audit fix: Matteo must not state OR confirm a numeric result ("that's why it's 3 m/s²")
+    (r"\b(is|it's|it is|equals|=|gives you|comes out (to|as))\s*-?\d+(\.\d+)?\s*(m/s²|m/s\^2|m/s|n|kg)\b",
+     "states or confirms a numeric result"),
 ]
 
 STRICT_REMINDER = (

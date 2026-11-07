@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 GRAPH_PATH = ROOT / "data" / "graph.json"
 
 COLORS = {"untested": "#9aa1a9", "weak": "#d64545", "shaky": "#d9a21b", "solid": "#1f9d55"}
+PALE = {"weak": "#f4b4b4", "shaky": "#f3dc9b", "solid": "#a9dcbd"}  # same band, not confirmed yet
 
 
 def band(score: int | None) -> str:
@@ -77,12 +78,13 @@ def render_html(mastery: dict | None = None, highlight: list[str] | None = None,
         title = f"{attrs['name']}\n{attrs['description']}\nSource: {attrs['source']}"
         if m:
             title += f"\nScore: {m.get('score')}/3 ({m.get('status', '')})"
+        pale = tentative and b != "untested"
         net.add_node(
-            cid, label=textwrap.fill(attrs["name"], 16), title=title, color=COLORS[b], shape="box",
+            cid, label=textwrap.fill(attrs["name"], 16), title=title, color=PALE[b] if pale else COLORS[b], shape="box",
             margin=8,
             borderWidth=4 if cid in highlight else 1,
             shapeProperties={"borderDashes": [6, 4] if tentative else False},
-            font={"color": "#ffffff" if b != "untested" else "#1b1d1f", "size": 15},
+            font={"color": "#1b1d1f" if (b == "untested" or pale) else "#ffffff", "size": 15},
         )
     for a, b in G.edges:
         on_path = a in highlight and b in highlight

@@ -2,11 +2,11 @@
 
 **Reply Student Tech Clash 2026 · AI on Campus · Politecnico di Torino**
 
-Students learn **Newton's laws** by teaching **Matteo**, an AI freshman who is confused on purpose. They teach him alone or **as a study group**, with Matteo as the "+1" member. Matteo never gives answers. He asks, plants real first-year misconceptions and hands questions back to the peers ("Bea, do you agree with Alex?"). Behind him, a silent **Examiner** scores every explanation against a **course knowledge graph**. The code traces **why** a student is stuck through prerequisites, down to the source. The **professor** sees anonymized flags and approves or rejects them.
+Students learn **Newton's laws** by teaching **Matteo**, an AI freshman who is confused on purpose. They teach him alone or **as a study group**, with Matteo as the "+1" member. Matteo is built not to give answers (his role plus a guardrail in code that blocks tutor-style replies). He asks, plants real first-year misconceptions and hands questions back to the peers ("Bea, do you agree with Alex?"). Behind him, a silent **Examiner** scores every explanation against a **course knowledge graph**. The code points to a **possible gap to check** by walking the prerequisites, down to the source. It's a hypothesis to investigate, not a diagnosis. The **professor** sees anonymized flags and approves or rejects them.
 
-> *"You struggle with **Newton's third law** because it requires **Force as an interaction**, and your explanation of Force as an interaction was weak."* (live output, `docs/example-interactions.md`)
+> *"Possible gap to check: Newton's third law builds on **Force as an interaction**, and your explanation of Force as an interaction was weak. Check that first."* (app card; a hypothesis, not a diagnosis)
 
-**Student flow:** ① Start (alone or as a group) → ② **today's session quiz** (graded in code; the answers stay locked) → ③ **teach Matteo** the topic you missed → ④ summary (quiz answers unlock, what to review, 🔥 streak +1).
+**Student flow:** ① Start (alone or as a group) → ② **today's session quiz** (graded in code; the answers stay locked) → ③ **teach Matteo** the topic you missed (the next step stays locked until you've explained something) → ④ **final check on your own**: a new question on that topic, graded by code (MCQ) or against the professor's criteria (written) → ⑤ summary (answers unlock, what to review, 🔥 participation streak +1).
 **Professor:** topics to review (approve/reject) · today's quiz results per topic (no names) · **create a quiz from lecture PDFs** (AI draft → edit → publish) · class streak · class map.
 The quiz and streak features were integrated from teammates' prototypes (`quiz_feature`, `StreakTA`): see `app/quiz.py`, `app/streaks.py`, `prompts/quizmaster.md`.
 
@@ -27,7 +27,7 @@ Checks:
 
 | Command | What it proves | Cost |
 |---|---|---|
-| `python scripts/test_guardrails.py` | The code guardrail blocks 10/10 tutor-style drafts and wrongly blocks 0/5 Matteo-style ones | free |
+| `python scripts/test_guardrails.py` | The code guardrail blocks 13/13 tutor-style drafts (incl. the numeric-result leak found by an audit) and wrongly blocks 0/5 Matteo-style ones. These are tested patterns, not a guarantee | free |
 | `python scripts/validate_graph.py` | Graph integrity vs the material pack (9 checks) | free |
 | `python scripts/smoke.py` | Model reachable; normal + boundary reply | ~1 cent |
 | `python scripts/scenarios.py` | 5 live scenarios → regenerates `docs/example-interactions.md` | ~$0.50 |
@@ -58,12 +58,12 @@ every step ──► logs/session.jsonl (testing evidence)
 | **Knowledge** | `data/graph.json`: 13 concepts and 20 `requires` edges. Every node has a source (OpenStax University Physics Vol. 1, Ch. 5, plus the demo handout), learning outcomes, linked quiz items and misconception IDs from the pack's catalogue of 12 |
 | **Tools / actions** | `update_mastery`, `trace_root_cause`, `flag_for_lecturer` (`app/tools.py`); the professor's `set_flag_status` (approve/reject); `generate_quiz` (AI draft from PDF), `grade_quiz` (deterministic, no LLM), streak updates (`app/quiz.py`, `app/streaks.py`) |
 | **Decisions** | The Examiner decides scores, misconceptions and the next probe. **Code** decides the root cause (the graph, not the LLM), what counts as "confirmed" (two consistent observations), whether a draft is allowed (the guardrail) and what is anonymized |
-| **Output** | Matteo's question; live graph colours; the "Why am I stuck?" card with path and sources; the agent-trace panel; anonymized professor flags with claim, uncertainty and a suggested follow-up from the pack |
+| **Output** | Matteo's question; live graph colours; the "Possible gap to check" card with path and sources; the agent-trace panel; anonymized professor flags with claim, uncertainty and a suggested follow-up from the pack |
 
 ### Custom logic worth knowing
 - **Never trust model IDs** (`orchestrator._validate_ids`). Concept IDs not in the graph, misconception IDs not in the catalogue, invented peers and unknown planted misconceptions are all dropped. Out-of-scope topics are marked `not_in_graph`, and Matteo says "not sure that's in today's lecture".
-- **No overclaiming.** A weak spot is a *hypothesis (needs confirmation)* until two consistent observations; a dashed node border shows it. No root cause is traced for a student who was never scored on that concept. There is no "% mastery" and no grouping by grades.
-- **Root cause.** The weakest tested prerequisite wins, with ties going to the closest. If a weak concept depends on the one the student is struggling with, the trace starts from that dependent, which produces "X because it requires Y".
+- **No overclaiming.** A weak spot is a *hypothesis (needs confirmation)* until two consistent observations; unconfirmed topics are drawn **pale** with a dashed border, so solid green means confirmed. The final check adds an independent observation. Professor flags count **distinct students** (pseudonymous keys), not events. No root cause is traced for a student who was never scored on that concept. There is no "% mastery" and no grouping by grades.
+- **Root cause.** The weakest tested prerequisite wins, with ties going to the closest. If a weak concept depends on the one the student is struggling with, the trace starts from that dependent, which produces "X builds on Y, and Y was weak: check Y first". This is a pedagogical dependency, not proof of the cause.
 - **Step budget.** At most 2 LLM retries per turn: 1 Examiner retry on invalid JSON, 1 Matteo regeneration. If the API fails, Matteo falls back to a safe canned question (tested live when the account hit its spend limit: no crash).
 - **Retrieval segregation.** The instructor answer key is never in Matteo's context.
 

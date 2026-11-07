@@ -16,6 +16,11 @@ MUST_BLOCK = [
     "In summary, the puck keeps moving because no net force acts on it.",
     "The correct answer is B.",
     "Hmm " * 85,  # too long
+    # regression (audit): this exact reply passed the old guardrail in docs/example-interactions.md
+    "Ohh okay, so the 10 N and the 4 N kind of fight, and only the leftover 6 N actually moves the cart, "
+    "that's why it's 3 m/s². But wait, if the same forces pull a heavier 4 kg cart, it should speed up even faster, right?",
+    "So the acceleration comes out to 2.0 m/s², and the contact force is 6 N.",
+    "Then a = 6 / 2, which gives you 3 m/s².",
 ]
 MUST_PASS = [
     "I don't know, that's literally why I'm asking you! So does the car push back on the truck at all?",

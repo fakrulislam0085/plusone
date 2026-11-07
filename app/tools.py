@@ -24,6 +24,15 @@ MANIFEST = json.loads((ROOT / "materials" / "physics1_newton" / "course_manifest
 MISCONCEPTIONS: dict[str, str] = MANIFEST["misconceptions"]
 
 
+SALT = "matteo-demo-salt"  # demo only; a real deployment keeps a secret salt server-side
+
+
+def student_key(student: str) -> str:
+    """Pseudonymous key so flags can count DISTINCT students without storing who they are."""
+    import hashlib
+    return hashlib.sha256(f"{SALT}:{slug(student)}".encode()).hexdigest()[:12]
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -124,18 +133,19 @@ def trace_root_cause(student_id: str, concept_id: str) -> dict:
         r = path[-1]
         quality = "weak" if r["score"] <= 1 else "shaky"
         via = " → ".join(p["name"] for p in path[1:-1])
-        explanation = (f"You struggle with **{cname}** because it requires **{r['name']}**"
+        explanation = (f"**Possible gap to check:** {cname} builds on **{r['name']}**"
                        + (f" (via {via})" if via else "")
-                       + f", and your explanation of {r['name']} was {quality}.")
+                       + f", and your explanation of {r['name']} was {quality}. Check that first.")
     else:
-        explanation = f"Your explanation of **{cname}** itself is the weak spot."
+        explanation = f"**Possible gap to check:** your explanation of **{cname}** itself was weak."
         if untested:
-            explanation += (" Its prerequisites haven't been tested yet: check "
-                            f"**{G.nodes[untested[0]]['name']}** next.")
+            explanation += (f" It builds on **{G.nodes[untested[0]]['name']}**, which you haven't explained yet: "
+                            "check that next.")
         else:
-            explanation += " Its prerequisites look fine, so focus on this concept directly."
-    if mastery.get(root, {}).get("status") == "needs_confirmation":
-        explanation += " _(Hypothesis: needs one more piece of evidence.)_"
+            explanation += " Its building blocks look fine, so revisit this concept directly."
+    explanation += " _A hypothesis from your explanations, not a diagnosis"
+    explanation += (": one more piece of evidence would confirm it._"
+                    if mastery.get(root, {}).get("status") == "needs_confirmation" else "._")
 
     out = {"concept_id": concept_id, "found": True, "root_id": root, "path": path,
            "untested_prereqs": [node_info(u) for u in untested[:3]], "explanation": explanation}
@@ -161,13 +171,17 @@ def _sanitize(reason: str, names: list[str]) -> str:
 
 
 def flag_for_lecturer(concept_id: str, reason: str, misconception_id: str | None = None,
-                      names: list[str] | None = None) -> dict:
+                      names: list[str] | None = None, student: str | None = None) -> dict:
     G = load_graph()
     flags = load_flags()
     reason = _sanitize(reason, names or [])
     for f in flags:
         if f["concept_id"] == concept_id and f["status"] == "pending":
-            f["count"] += 1
+            keys = f.setdefault("student_keys", [])
+            if student and student_key(student) not in keys:   # count = distinct students, not events
+                keys.append(student_key(student))
+                f["count"] += 1
+            f["events"] = f.get("events", f["count"]) + 1
             f["last_seen"] = _now()
             if misconception_id and misconception_id not in f["misconception_ids"]:
                 f["misconception_ids"].append(misconception_id)
@@ -176,7 +190,8 @@ def flag_for_lecturer(concept_id: str, reason: str, misconception_id: str | None
     else:
         flag = {"concept_id": concept_id, "concept_name": G.nodes[concept_id]["name"] if concept_id in G
                 else concept_id, "reason": reason, "misconception_ids": [misconception_id] if misconception_id
-                else [], "count": 1, "status": "pending", "first_seen": _now(), "last_seen": _now()}
+                else [], "count": 1, "events": 1, "student_keys": [student_key(student)] if student else [],
+                "status": "pending", "first_seen": _now(), "last_seen": _now()}
         flags.append(flag)
     FLAGS_PATH.parent.mkdir(parents=True, exist_ok=True)
     FLAGS_PATH.write_text(json.dumps(flags, indent=2, ensure_ascii=False), encoding="utf-8")

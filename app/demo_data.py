@@ -14,6 +14,7 @@ import course
 import quiz
 import streaks
 from graph import load_graph
+from tools import student_key
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -111,7 +112,8 @@ def seed() -> None:
                 f = flags.setdefault(c, {"concept_id": c, "concept_name": G.nodes[c]["name"], "reason": REASONS[c],
                                          "misconception_ids": [MISC_FOR[c]] if c in MISC_FOR else [], "count": 0,
                                          "status": "pending", "first_seen": _ts(5), "last_seen": _ts(0.2)})
-                f["count"] += 1
+                f.setdefault("student_keys", []).append(student_key(sid))
+                f["count"] = f["events"] = len(f["student_keys"])
     (DATA / "lecturer_flags.json").write_text(json.dumps(list(flags.values()), indent=2), encoding="utf-8")
 
 
