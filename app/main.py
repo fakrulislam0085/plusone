@@ -1,4 +1,4 @@
-"""PlusOne campus portal (demo).  Run:  .venv\\Scripts\\streamlit run app/main.py
+"""Matteo campus portal (demo).  Run:  .venv\\Scripts\\streamlit run app/main.py
 
 Pages:  Home (portal)  ->  Course: Physics I (unit cards)  ->  Unit: Newton's laws
 Unit flow (student):  1 Start -> 2 Quiz -> 3 Teach Matteo -> 4 Summary
@@ -25,7 +25,7 @@ STAGES = {"start": 1, "quiz": 2, "teach": 3, "summary": 4}
 AVATARS = {"Alex": "🧑‍🦱", "Bea": "👩‍🦰", "Chris": "🧑‍🦲", "Dani": "👩‍🦳", "Elena": "👩", "Federico": "🧔",
            "Giulia": "👩‍🦱", "Hamid": "🧑", "Irene": "👱‍♀️", "Luca": "👨"}
 
-st.set_page_config(page_title="PlusOne · Campus portal (demo)", page_icon="➕", layout="wide",
+st.set_page_config(page_title="Matteo · Campus portal (demo)", page_icon="🤔", layout="wide",
                    initial_sidebar_state="collapsed")
 style.apply()
 demo_data.ensure()
@@ -198,7 +198,7 @@ with main:
                     st.markdown(f"**Until 18:00 · Session quiz open**  \n{n} of {size} students answered")
             if not is_prof:
                 with st.container(border=True):
-                    st.markdown("#### ➕ PlusOne")
+                    st.markdown("#### 🤔 Matteo")
                     team = team_of(user["id"])
                     st.markdown(f"🔥 **{streaks.streak(user['id'])}-session streak**  \n"
                                 f"{user['team']}: {', '.join(r['first'] for r in team)} · "

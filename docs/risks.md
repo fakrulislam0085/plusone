@@ -1,4 +1,4 @@
-# Risks and how PlusOne handles them
+# Risks and how Matteo handles them
 
 | Risk | Who it hurts | Mitigation (built) | Still open |
 |---|---|---|---|

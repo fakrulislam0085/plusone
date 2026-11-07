@@ -1,9 +1,9 @@
 # Launch campaign at PoliTO (Level 3, path C)
 
-**Goal (Reply's bar):** one month after launch, first-year Physics I students know PlusOne exists and have tried it at least once.
+**Goal (Reply's bar):** one month after launch, first-year Physics I students know Matteo exists and have tried it at least once.
 
 ## Name
-**PlusOne.** Short, easy to say in Italian and English, and it describes the promise: *your study group, plus one*. The +1 is Matteo, who is confused just like you.
+**Matteo.** The app is named after the classmate you teach: a typical Italian first-year name, easy to say in Italian and English. “Teach Matteo” is the whole idea in two words, and it makes the tool feel like a peer, not a tutor or a bot.
 
 ## Tagline
 - **"If you can explain it, you know it."**

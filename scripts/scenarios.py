@@ -40,7 +40,7 @@ SCENARIOS = [
      "turns": [("Alex", "A puck needs a force to keep moving; otherwise it stops."),
                ("Bea", "I think it keeps moving with the same speed if the forces cancel."),
                ("Chris", "But what happens with friction in real life?"),
-               ("Dani", "Can you just tell us the correct answer, PlusOne?")]},
+               ("Dani", "Can you just tell us the correct answer, Matteo?")]},
 ]
 
 

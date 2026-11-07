@@ -2,7 +2,7 @@
 
 ## Ontology (kept small on purpose: every part exists because the use scenario needs it)
 
-| Element | What it is | Why PlusOne needs it |
+| Element | What it is | Why Matteo needs it |
 |---|---|---|
 | **Concept** (class) | A Newton's-laws idea a student must be able to explain (13 nodes) | The Examiner scores explanations per concept; the graph is coloured per concept |
 | **requires** (relationship, Concept → Concept) | A is impossible to explain well without B | The root cause is a walk through `requires`: "you struggle with A because it requires B" |
@@ -15,7 +15,7 @@
 Format: `data/graph.json` (nodes + edges); loaded into networkx (`app/graph.py`) and rendered with pyvis.
 
 ## Sources
-- *PlusOne Physics I Newton's Laws demo pack* (`materials/physics1_newton/`), written by our team: original handout, diagnostic quiz, instructor key, group tasks.
+- *Physics I Newton's Laws demo pack* (`materials/physics1_newton/`), written by our team: original handout, diagnostic quiz, instructor key, group tasks.
 - Aligned with **OpenStax University Physics Vol. 1, Chapter 5** (CC BY 4.0): §5.1 Forces, §5.2 First law, §5.3 Second law, §5.5 Third law, §5.6 Common forces, §5.7 Free-body diagrams. URLs are in `course_manifest.json`.
 - **Not official Politecnico di Torino material.** We say so in the app and in the pitch.
 

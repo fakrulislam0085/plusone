@@ -1,4 +1,4 @@
-# PlusOne: learn Physics I by teaching a confused AI
+# Matteo: learn Physics I by teaching a confused AI
 
 **Reply Student Tech Clash 2026 · AI on Campus · Politecnico di Torino**
 

@@ -1,6 +1,6 @@
 {
   "course": "Physics I - Newton's laws of motion",
-  "source_note": "Concepts from the PlusOne demo pack (materials/physics1_newton), aligned with OpenStax University Physics Vol. 1, Ch. 5 (CC BY 4.0). Not official PoliTO notes.",
+  "source_note": "Concepts from the team's Physics I demo pack (materials/physics1_newton), aligned with OpenStax University Physics Vol. 1, Ch. 5 (CC BY 4.0). Not official PoliTO notes.",
   "nodes": [
     {"id": "force_interaction", "name": "Force as an interaction",
      "description": "A force is a push or pull exerted BY one body ON another body. Every force has a source and a recipient.",

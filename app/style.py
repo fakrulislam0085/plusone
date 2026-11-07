@@ -90,7 +90,7 @@ section[data-testid="stSidebar"] { background: #fbfbfd; border-right: 1px solid 
 
 HERO = """
 <div class="hero">
-  <div class="eyebrow">PlusOne · Student Tech Clash 2026 · AI on Campus</div>
+  <div class="eyebrow">Matteo · Student Tech Clash 2026 · AI on Campus</div>
   <h1>Learn Physics by <span>teaching it.</span></h1>
   <p>Matteo is a confused AI freshman. He never gives answers: you, or your whole study group, explain,
      and he asks. Behind him, an examiner maps every explanation onto the course graph and shows
@@ -113,7 +113,7 @@ STEP_NAMES = ["Start", "Quiz", "Teach Matteo", "Summary"]
 
 
 def header() -> None:
-    st.markdown("<div class='topbar'><div class='brand'>➕ Plus<span>One</span></div>"
+    st.markdown("<div class='topbar'><div class='brand'>🤔 <span>Matteo</span></div>"
                 "<div class='tagline'>Campus portal · demo</div></div>",
                 unsafe_allow_html=True)
 

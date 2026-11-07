@@ -1,4 +1,4 @@
-# PlusOne: Reply Student Tech Clash 2026 (AI on Campus), PoliTO
+# Matteo: Reply Student Tech Clash 2026 (AI on Campus), PoliTO
 
 Hackathon TODAY (Sat 7 Nov 2026). The first jury evaluation is around **15:00–16:00**, so we need to be **demo-ready by 14:30**. Speed and a demo that never breaks matter more than elegance. Full challenge brief: `docs/challenge-brief.md`. Team-facing idea page: `docs/idea-overview.html`.
 
@@ -8,7 +8,7 @@ Hackathon TODAY (Sat 7 Nov 2026). The first jury evaluation is around **15:00–
 - Level 3 (optional): Knowledge Graph (path B) + Launch campaign (path C). We do NOT build Reply's Problem-Identifier/Solver multi-agent spec.
 - Scoring: Creativity & Innovation 40%, Impact 20%, Technical 20%, Presentation 20%. Judge questions: new or just faster? Helps think or thinks for them? Who benefits / who is left out?
 
-## The idea: PlusOne
+## The idea: Matteo (app name = the AI classmate's name)
 Students learn Physics I by **teaching Matteo**, a confused AI freshman (*matricola*). They teach him alone or **as a study group** (Matteo is the "+1" member).
 - Matteo asks naive questions, plants real misconceptions (only from our catalogue), and NEVER gives answers. If asked for the answer: "I don't know, that's why I'm asking you!" In group mode he turns the question back to the peers ("Bea, do you agree with Alex?").
 - The **Examiner** silently scores each explanation against the Physics I concept graph, updates that student's mastery, and the code traces the root cause through prerequisites ("You struggle with the 3rd law because it requires force-as-interaction, and your free-body explanation was shaky", with a source).
