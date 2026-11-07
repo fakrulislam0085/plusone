@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 
+import networkx as nx
 from pydantic import ValidationError
 
 import guardrails
@@ -59,6 +60,13 @@ def _validate_ids(exam: ExaminerOutput, participants: list[str], speaker: str) -
             m.concept_id, m.not_in_graph = None, True
         if m.misconception_id and m.misconception_id not in MISCONCEPTIONS:
             m.misconception_id = None
+    # A wrong idea that came with a low score on a graph concept IS in the graph (just uncatalogued).
+    weak_scored = sorted((c for c in exam.concepts_touched if c.score <= 1), key=lambda c: c.score)
+    for m in exam.misconceptions:
+        if m.not_in_graph and m.concept_id in G:
+            m.not_in_graph = False
+        elif m.not_in_graph and m.concept_id is None and weak_scored:
+            m.concept_id, m.not_in_graph = weak_scored[0].id, False
     if exam.struggling_concept_id not in G:
         exam.struggling_concept_id = None
     if exam.flag_for_lecturer and exam.flag_for_lecturer.concept_id not in G:
@@ -96,6 +104,21 @@ def run_examiner(history, speaker, mode, participants) -> tuple[ExaminerOutput |
 
 
 # ---------------------------------------------------------------- tools
+def _trace_target(speaker: str, struggling: str | None) -> str | None:
+    """Which concept to trace. No overclaiming: only concepts this speaker was actually scored on.
+    If a weak concept depends on the struggling one, trace from that dependent, so the card can say
+    'you struggle with X because it requires <struggling>'."""
+    mastery = load_student(speaker)["mastery"]
+    if not struggling or struggling not in mastery:
+        return None
+    G = load_graph()
+    weak_dependents = [c for c, m in mastery.items() if c != struggling and m["score"] is not None
+                       and m["score"] <= 1 and c in G and struggling in nx.descendants(G, c)]
+    if weak_dependents:
+        return max(weak_dependents, key=lambda c: mastery[c]["evidence"][-1]["ts"])
+    return struggling
+
+
 def apply_tools(exam: ExaminerOutput, speaker: str, participants: list[str]) -> tuple[list[dict], dict | None]:
     actions: list[dict] = []
     for c in exam.concepts_touched:
@@ -106,9 +129,10 @@ def apply_tools(exam: ExaminerOutput, speaker: str, participants: list[str]) -> 
         if m.misconception_id:
             record_misconception(speaker, m.concept_id, m.misconception_id)
     root = None
-    if exam.struggling_concept_id:
-        root = trace_root_cause(speaker, exam.struggling_concept_id)
-        actions.append({"tool": "trace_root_cause", "args": f"{slug(speaker)}, {exam.struggling_concept_id}",
+    target = _trace_target(speaker, exam.struggling_concept_id)
+    if target:
+        root = trace_root_cause(speaker, target)
+        actions.append({"tool": "trace_root_cause", "args": f"{slug(speaker)}, {target}",
                         "result": f"root = {root.get('root_id')}"})
     if exam.flag_for_lecturer:
         f = exam.flag_for_lecturer

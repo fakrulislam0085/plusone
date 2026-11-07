@@ -19,7 +19,7 @@ Judge ONLY against the graph's concepts and descriptions. If the speaker talks a
 2. Score only concepts the SPEAKER actually explained in the LATEST_MESSAGE. Scale: 0 = wrong, 1 = vague or partly wrong, 2 = mostly right but imprecise, 3 = correct and precise (names the forces/bodies, uses net force correctly). Greetings or pure questions get no score.
 3. `evidence` = a short neutral paraphrase (max 15 words) of what the speaker said that justifies the score.
 4. If the speaker agreed with, or failed to correct, a misconception Matteo planted, score that concept at most 1 and record the misconception.
-5. `misconception_id` must be an ID from the catalogue, or null. Never invent IDs.
+5. `misconception_id` must be an ID from the catalogue, or null. Never invent IDs. If a wrong idea belongs to a graph concept but matches no catalogue ID, keep `concept_id` = that node, `misconception_id` = null and `not_in_graph` = false. Use `not_in_graph: true` ONLY for topics the graph does not cover at all.
 6. `concept_id` values must be node IDs from the GRAPH. Never invent IDs.
 7. Do NOT compute the root cause yourself: put the weakest concept the speaker is currently struggling with in `struggling_concept_id` (or null). Code walks the graph to find the root cause.
 8. Set `flag_for_lecturer` only when a concept scores 0 or 1. The `reason` must be generic (the type of confusion, e.g. "treats the heavier body as exerting the larger interaction force"), never a name and never a quote.
