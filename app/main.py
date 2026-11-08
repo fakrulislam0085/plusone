@@ -18,6 +18,7 @@ import professor
 import quiz as quizmod
 import streaks
 import style
+import widgets
 from graph import band, concept_name, load_graph, render_html
 from orchestrator import run_turn
 from tools import load_student, mastery_view, trace_root_cause, update_mastery
@@ -471,3 +472,7 @@ with main:
                                                 f"Correct: **{r['correct']}**  \n{r['explanation']}")
                                     st.caption(f"Source: {r['source']}")
             st.button("Start a new session", on_click=fresh_flow, key=k("again"))
+
+# floating widgets: streak hero (top-right, students only) + DEMO-ONLY global chat (bottom-right). Presentation only.
+_team = None if is_prof else team_of(user["id"])
+widgets.render(user, is_prof, [r["id"] for r in _team] if _team else None, None if is_prof else user.get("team"))

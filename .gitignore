@@ -24,3 +24,11 @@ AI TA Dashboard*.html
 data/roster.json
 data/course.json
 data/audit.json
+
+# pitch deck build outputs and captures
+deck/node_modules/
+deck/out/
+deck/assets/
+
+deck/pitch/assets/
+.frontend-slides/

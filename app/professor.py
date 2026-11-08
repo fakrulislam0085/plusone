@@ -122,7 +122,7 @@ def quiz_page() -> None:
                    f"{size} · graded by code, never by AI")
         for c, v in sorted(res["per_concept"].items(), key=lambda kv: kv[1]):
             st.markdown(f"{dot('weak' if v < 0.5 else 'shaky' if v < 0.8 else 'solid')}**{G.nodes[c]['name'] if c in G else c}**: "
-                        f"{round(v * 100)}% correct")
+                        f"{round(v * 100)}% correct", unsafe_allow_html=True)
         with st.expander("See the questions"):
             for i, q in enumerate(today["questions"], 1):
                 st.markdown(f"**{i}.** {q['q']}  \nCorrect: **{q['options'][q['correct']]}** · {q['source']}")
